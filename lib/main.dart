@@ -87,7 +87,11 @@ class _MyHomePageState extends State<MyHomePage> {
           return Container(
             height: 30,
             color: Colors.amber[widget.colorCodes[index]],
-            child: Center(child: Text('Entry ${widget.entries[index]}')),
+            // child: Center(child: Text('Entry ${widget.entries[index]}')),
+            child: Row(children: <Widget>[
+              Expanded(child: Text('Entry ${widget.entries[index]}')),
+              Expanded(child: Text('Tag ${widget.tags[index]}', textAlign: TextAlign.right)),
+            ]),
           );
         },
         separatorBuilder: (BuildContext context, int index) => Divider(
