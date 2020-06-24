@@ -1,15 +1,36 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-void main() {
-  runApp(MyApp());
-}
+import 'services/firebase_auth_service.dart';
+import 'authentication/sign_in_view.dart';
+import 'models/user.dart';
+
+import 'package:myapp/widgets/nav_drawer.dart';
+import 'package:myapp/widgets/item_list.dart';
+import 'package:myapp/widgets/item_editor.dart';
+
+void main() => runApp(
+      MultiProvider(
+        providers: [
+          Provider(
+            create: (_) => FirebaseAuthService(),
+          ),
+          StreamProvider(
+            create: (context) =>
+                context.read<FirebaseAuthService>().onAuthStateChanged,
+          ),
+        ],
+        child: MyApp(),
+      ),
+    );
 
 class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Snippet box',
       theme: ThemeData(
         // This is the theme of your application.
         //
@@ -26,7 +47,16 @@ class MyApp extends StatelessWidget {
         // closer together (more dense) than on mobile platforms.
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: MyHomePage(title: 'Flutter Demo Home Page'),
+      home: Consumer<User>(
+        builder: (_, user, __) {
+          if (user == null) {
+            return const SignInView();
+            // return const SignInView();
+          } else {
+            return MyHomePage(title: 'Snippet box');
+          }
+        },
+      ),
     );
   }
 }
@@ -44,93 +74,172 @@ class MyHomePage extends StatefulWidget {
   // always marked "final".
 
   final String title;
-  final List<String> entries = <String>['A', 'B', 'C'];
-  final List<String> tags = <String>['tagA', 'tagB', 'tagC'];
-  final List<int> colorCodes = <int>[100, 100, 100];
+  final String tagPrefix = 'label:';
 
   @override
   _MyHomePageState createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+enum ArticleTypes {
+  URL,
+  PDF,
+  TEXT,
+}
 
-  void _incrementCounter() {
+class _MyHomePageState extends State<MyHomePage> {
+  List<String> _queryTerms = [];
+  List<String> _queryTags = ['__all__'];
+
+  void _setQuery(String query) {
     setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
+      this._queryTags.clear();
+      this._queryTerms.clear();
+
+      query.split(' ').forEach((element) {
+        if (element.startsWith(widget.tagPrefix)) {
+          this._queryTags.add(element.replaceFirst(widget.tagPrefix, ''));
+        } else {
+          this._queryTerms.add(element);
+        }
+      });
+
+      if (this._queryTags.isEmpty) {
+        this._queryTags.add('__all__');
+      }
+    });
+    print('tags: ${this._queryTags}');
+    print('terms: ${this._queryTerms}');
+  }
+
+  _createDialogOption(
+      BuildContext context, ArticleTypes articleType, String str) {
+    return new SimpleDialogOption(
+      child: new Text(str),
+      onPressed: () {
+        Navigator.pop(context, articleType);
+      },
+    );
+  }
+
+  _addUrlDialog(BuildContext context) {
+    final titleController = TextEditingController();
+    final contentController = TextEditingController();
+
+    return showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: Text('Provide URL'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                TextField(
+                  controller: titleController,
+                  decoration: InputDecoration(hintText: "Title"),
+                ),
+                TextField(
+                  controller: contentController,
+                  decoration: InputDecoration(hintText: "URL path"),
+                ),
+              ],
+            ),
+            actions: <Widget>[
+              new FlatButton(
+                child: new Text('Add'),
+                onPressed: () async {
+                  print(
+                      'Add new title ${titleController.text} with article ${contentController.text}');
+                  await Firestore.instance.collection('test_list').add({
+                    'title': titleController.text,
+                    'uri': contentController.text,
+                    'tags': ['__all__'],
+                    'timestamp': FieldValue.serverTimestamp(),
+                  });
+                  Navigator.of(context).pop();
+                },
+              ),
+              new FlatButton(
+                child: new Text('CANCEL'),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+            ],
+          );
+        });
+  }
+
+  _addArticleDialog(BuildContext context) {
+    showDialog<ArticleTypes>(
+      context: context,
+      builder: (BuildContext context) => new SimpleDialog(
+        title: new Text('Select the content type'),
+        children: <Widget>[
+          _createDialogOption(context, ArticleTypes.URL, 'Url'),
+          _createDialogOption(context, ArticleTypes.TEXT, 'Text')
+        ],
+      ),
+    ).then((value) {
+      switch (value) {
+        case ArticleTypes.URL:
+          print('url');
+          _addUrlDialog(context);
+          break;
+        case ArticleTypes.PDF:
+          print('pdf');
+          break;
+        case ArticleTypes.TEXT:
+          print('text');
+          // TODO: switch to HTML editor.
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => LaunchTextEditor(
+                initialTitle: 'New article',
+                initialContent: 'New content',
+              ),
+            ),
+          );
+          break;
+      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
       appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
         title: Text(widget.title),
+        actions: <Widget>[
+          IconButton(
+            icon: Icon(
+              Icons.power_settings_new,
+              size: 24.0,
+            ),
+            onPressed: () {
+              print('logout');
+              context.read<FirebaseAuthService>().signOut();
+            },
+          ),
+        ],
       ),
-      body: ListView.separated(
-        padding: const EdgeInsets.all(8),
-        itemCount: widget.entries.length,
-        itemBuilder: (BuildContext context, int index) {
-          return Container(
-            height: 30,
-            color: Colors.amber[widget.colorCodes[index]],
-            child: Center(child: Text('Entry ${widget.entries[index]}')),
-          );
-        },
-        separatorBuilder: (BuildContext context, int index) => Divider(
-          color: Colors.grey[300],
-          height: 5,
-          thickness: 2,
+      drawer: NavDrawer(),
+      body: Column(children: <Widget>[
+        TextField(
+          decoration: InputDecoration(
+              border: InputBorder.none,
+              hintText: 'Input filter query. Ex) label:inbox kitten'),
+          onSubmitted: (String value) => this._setQuery(value),
         ),
-      ),
-      // body: Center(
-      //   // Center is a layout widget. It takes a single child and positions it
-      //   // in the middle of the parent.
-      //   child: Column(
-      //     // Column is also a layout widget. It takes a list of children and
-      //     // arranges them vertically. By default, it sizes itself to fit its
-      //     // children horizontally, and tries to be as tall as its parent.
-      //     //
-      //     // Invoke "debug painting" (press "p" in the console, choose the
-      //     // "Toggle Debug Paint" action from the Flutter Inspector in Android
-      //     // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-      //     // to see the wireframe for each widget.
-      //     //
-      //     // Column has various properties to control how it sizes itself and
-      //     // how it positions its children. Here we use mainAxisAlignment to
-      //     // center the children vertically; the main axis here is the vertical
-      //     // axis because Columns are vertical (the cross axis would be
-      //     // horizontal).
-      //     mainAxisAlignment: MainAxisAlignment.center,
-      //     children: <Widget>[
-      //       Text(
-      //         'You have pushed the button this many times:',
-      //       ),
-      //       Text(
-      //         '$_counter',
-      //         style: Theme.of(context).textTheme.headline4,
-      //       ),
-      //     ],
-      //   ),
-      // ),
+        ItemList(this._queryTags, this._queryTerms),
+      ]),
       floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
+        onPressed: () {
+          this._addArticleDialog(context);
+        },
         child: Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+        backgroundColor: Colors.blue,
+      ),
     );
   }
 }
