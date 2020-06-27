@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'package:myapp/widgets/nav_drawer.dart';
 
 void main() {
+  Firestore.instance
+      .collection('test_list')
+      .snapshots()
+      .listen((data) =>
+          data.documents.forEach((doc) => print(doc["title"])));
+
   runApp(MyApp());
 }
 
