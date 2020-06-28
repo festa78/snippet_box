@@ -1,14 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'package:myapp/widgets/nav_drawer.dart';
+import 'package:myapp/widgets/item_list.dart';
 
 void main() {
-  Firestore.instance
-      .collection('test_list')
-      .snapshots()
-      .listen((data) =>
-          data.documents.forEach((doc) => print(doc["title"])));
 
   runApp(MyApp());
 }
@@ -98,27 +93,7 @@ class _MyHomePageState extends State<MyHomePage> {
               hintText: 'Enter a search term'
             ),
           ),
-          ListView.separated(
-            padding: const EdgeInsets.all(8),
-            scrollDirection: Axis.vertical,
-            shrinkWrap: true,
-            itemCount: widget.entries.length,
-            itemBuilder: (BuildContext context, int index) {
-              return Container(
-                height: 30,
-                color: Colors.amber[widget.colorCodes[index]],
-                child: Row(children: <Widget>[
-                  Expanded(child: Text('Entry ${widget.entries[index]}')),
-                  Expanded(child: Text('Tag ${widget.tags[index]}', textAlign: TextAlign.right)),
-                ]),
-              );
-            },
-            separatorBuilder: (BuildContext context, int index) => Divider(
-              color: Colors.grey[300],
-              height: 5,
-              thickness: 2,
-            ),
-          ),
+          ItemList(),
         ]
       ),
       floatingActionButton: FloatingActionButton(
