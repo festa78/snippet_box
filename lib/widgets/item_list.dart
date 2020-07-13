@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -6,14 +8,16 @@ class ItemList extends StatelessWidget {
   _navigate(context, document) async {
     if (await canLaunch(document['uri'])) {
       await launch(document['uri']);
-    } else {
+    } else if (!document['text'].isEmpty) {
       await Navigator.push(
           context,
           MaterialPageRoute(
               builder: (
             context,
           ) =>
-                  SecondRoute()));
+                  SecondRoute(document)));
+    } else {
+      throw 'Cannot read document $document';
     }
   }
 
@@ -47,13 +51,18 @@ class ItemList extends StatelessWidget {
 }
 
 class SecondRoute extends StatelessWidget {
+  const SecondRoute(this.document);
+
+  final DocumentSnapshot document;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Second Route"),
+        title: Text(this.document['title']),
       ),
-      body: Center(child: Text('Go back!')),
+      // Needs to relocate \n to enable Text to recognize.
+      body: Center(child: Text(this.document['text'].replaceAll('\\n', '\n'))),
     );
   }
 }
