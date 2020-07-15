@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -15,7 +13,7 @@ class ItemList extends StatelessWidget {
               builder: (
             context,
           ) =>
-                  SecondRoute(document)));
+                  TextViewer(document)));
     } else {
       throw 'Cannot read document $document';
     }
@@ -50,19 +48,24 @@ class ItemList extends StatelessWidget {
   }
 }
 
-class SecondRoute extends StatelessWidget {
-  const SecondRoute(this.document);
+class TextViewer extends StatelessWidget {
+  const TextViewer(this.document);
 
   final DocumentSnapshot document;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(this.document['title']),
-      ),
-      // Needs to relocate \n to enable Text to recognize.
-      body: Center(child: Text(this.document['text'].replaceAll('\\n', '\n'))),
-    );
+        appBar: AppBar(
+          title: Text(this.document['title']),
+        ),
+        // Needs to relocate \n to enable Text to recognize.
+        body: SingleChildScrollView(
+          scrollDirection: Axis.vertical,
+          child: Text(this
+              .document['text']
+              .replaceAll('\\n', '\n')
+              .replaceAll('　', '\n')),
+        ));
   }
 }
