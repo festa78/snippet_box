@@ -18,11 +18,31 @@ exports.addMessage = functions.https.onRequest(async (req, res) => {
   try {
     console.log('Email recieved')
 
-    console.log(req)
-    console.log(req.headers)
-    console.log(req.body.toString())
-
     const busboy_parser = new busboy({ headers: req.headers })
+
+    busboy_parser.on("field", async (field, val) => {
+      console.log(`Processed field ${field}: ${val}.`);
+      if (field === 'envelope') {
+        uid = await admin.auth().getUserByEmail(JSON.parse(val).from)
+          .then((userRecord) => {
+            // See the UserRecord reference doc for the contents of userRecord.
+            console.log('Successfully fetched user data:', userRecord.toJSON());
+            return userRecord.uid;
+          })
+          .catch((error) => {
+            console.log('Error fetching user data:', error);
+            throw error;
+          });
+        console.log('get uid inside', uid);
+
+        return;
+      }
+    })
+
+    busboy_parser.end(req.rawBody)
+
+    const busboy_parser2 = new busboy({ headers: req.headers })
+
     let docRef = fireStore.collection('test_list').doc();
     docRef.set({
         tags: ['__all__'],
@@ -31,7 +51,7 @@ exports.addMessage = functions.https.onRequest(async (req, res) => {
       .then(() => console.log('added tags'))
       .catch((error) => console.log('error tags:', error));
 
-    busboy_parser.on("field", (field, val) => {
+    busboy_parser2.on("field", (field, val) => {
       console.log(`Processed field ${field}: ${val}.`);
       if (field === 'subject') {
         console.log('find subject')
@@ -51,7 +71,8 @@ exports.addMessage = functions.https.onRequest(async (req, res) => {
       }
     })
 
-    busboy_parser.end(req.rawBody)
+    busboy_parser2.end(req.rawBody)
+
   } finally {
     res.send(200);
   }
