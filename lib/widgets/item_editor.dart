@@ -24,7 +24,7 @@ class LaunchTextEditor extends StatelessWidget {
             onPressed: () async {
               print('title: ${titleController.text}');
               print('content: ${contentController.text}');
-              await Firestore.instance.collection('test_list').add({
+              await FirebaseFirestore.instance.collection('test_list').add({
                 'title': titleController.text,
                 'uri': '',
                 'html': '',

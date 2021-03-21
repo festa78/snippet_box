@@ -16,7 +16,7 @@ class NavDrawer extends StatelessWidget {
         ),
       ),
       StreamBuilder<QuerySnapshot>(
-          stream: Firestore.instance.collection('tag_list').snapshots(),
+          stream: FirebaseFirestore.instance.collection('tag_list').snapshots(),
           builder:
               (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
             if (snapshot.hasError) return new Text('Error: ${snapshot.error}');
@@ -26,12 +26,11 @@ class NavDrawer extends StatelessWidget {
               default:
                 return new ListView(
                   shrinkWrap: true,
-                  children:
-                      snapshot.data.documents.map((DocumentSnapshot document) {
+                  children: snapshot.data.docs.map((DocumentSnapshot document) {
                     return new GestureDetector(
                         child: new Card(
                             child: ListTile(
-                                title: new Text(document.documentID),
+                                title: new Text(document.id),
                                 subtitle: new Text(
                                     '(${document['documents'].length})'))));
                   }).toList(),

@@ -13,6 +13,7 @@ void main() => runApp(
             create: (_) => FirebaseAuthService(),
           ),
           StreamProvider(
+            initialData: null,
             create: (context) =>
                 context.read<FirebaseAuthService>().onAuthStateChanged,
           ),
@@ -30,7 +31,7 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: Consumer<User>(
+      home: Consumer<MyUser>(
         builder: (_, user, __) {
           if (user == null) {
             return const SignInView();

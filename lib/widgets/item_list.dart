@@ -47,7 +47,7 @@ class ItemList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
-      stream: Firestore.instance
+      stream: FirebaseFirestore.instance
           .collection('test_list')
           .orderBy('timestamp', descending: true)
           .where('tags', arrayContainsAny: this.queryTags)
@@ -63,7 +63,7 @@ class ItemList extends StatelessWidget {
           default:
             return new ListView(
               shrinkWrap: true,
-              children: snapshot.data.documents
+              children: snapshot.data.docs
                   .where((document) =>
                       document['tags'].toSet().containsAll(this.queryTags))
                   .where((document) => this
@@ -110,7 +110,7 @@ class ContentViewer extends StatelessWidget {
             onPressed: () async => await Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => TagEditor(this.document.documentID),
+                builder: (context) => TagEditor(this.document.id),
               ),
             ),
           ),
@@ -120,10 +120,10 @@ class ContentViewer extends StatelessWidget {
               size: 24.0,
             ),
             onPressed: () async {
-              print('Delete document ${this.document.documentID}');
-              await Firestore.instance
+              print('Delete document ${this.document.id}');
+              await FirebaseFirestore.instance
                   .collection('test_list')
-                  .document(this.document.documentID)
+                  .doc(this.document.id)
                   .delete();
               Navigator.of(context).pop();
             },
@@ -151,12 +151,12 @@ class _TagEditorState extends State<TagEditor> {
   void initState() {
     super.initState();
 
-    this._tags = Firestore.instance
+    this._tags = FirebaseFirestore.instance
         .collection('test_list')
-        .document(widget.documentID)
+        .doc(widget.documentID)
         .get()
         .then((doc) {
-      var tags = doc.data['tags'];
+      var tags = doc.data()['tags'];
       tags.sort();
       tags.removeAt(tags.indexOf('__all__'));
       tags.add('__all__');
@@ -218,10 +218,10 @@ class _TagEditorState extends State<TagEditor> {
                 onPressed: () {
                   print(
                       'Assign tags ${snapshot.data} to document ${widget.documentID}');
-                  Firestore.instance
+                  FirebaseFirestore.instance
                       .collection('test_list')
-                      .document(widget.documentID)
-                      .updateData({
+                      .doc(widget.documentID)
+                      .update({
                     'tags': snapshot.data,
                     'timestamp': FieldValue.serverTimestamp(),
                   });

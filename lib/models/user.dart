@@ -1,8 +1,8 @@
 import 'package:meta/meta.dart';
 
 @immutable
-class User {
-  const User({
+class MyUser {
+  const MyUser({
     @required this.uid,
     this.email,
     this.photoUrl,
