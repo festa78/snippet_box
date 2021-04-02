@@ -9,7 +9,7 @@ class ItemList extends StatelessWidget {
   final List<String> queryTags;
   final List<String> queryTerms;
 
-  _navigate(context, document) async {
+  _navigate(BuildContext context, DocumentSnapshot document) async {
     final content = await _getContent(document);
     await Navigator.push(
       context,
