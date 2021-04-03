@@ -12,6 +12,53 @@ admin.initializeApp(functions.config().firebase)
 
 var fireStore = admin.firestore()
 
+function firebaseGetUserByEmail(email) {
+  return admin.auth().getUserByEmail(email)
+    .then((userRecord) => {
+      // See the UserRecord reference doc for the contents of userRecord.
+      console.log('Successfully fetched user data:', userRecord.toJSON());
+      return userRecord.uid;
+    })
+    .catch((error) => {
+      console.log('Error fetching user data:', error);
+      throw error;
+    });
+}
+
+function addMessageToFireStore(uid, req) {
+  const busboy_parser2 = new busboy({ headers: req.headers })
+
+  let docRef = fireStore.collection('test_list').doc();
+  docRef.set({
+      tags: ['__all__'],
+      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+    }, {merge: true})
+    .then(() => console.log('added tags'))
+    .catch((error) => console.log('error tags:', error));
+
+  busboy_parser2.on("field", (field, val) => {
+    console.log(`Processed field ${field}: ${val}.`);
+    if (field === 'subject') {
+      console.log('find subject')
+      docRef.set({title: val}, {merge: true})
+        .then(() => console.log('added subject'))
+        .catch((error) => console.log('error subject:', error));
+    } else if (field === 'html') {
+      console.log('find html')
+      docRef.set({html: val}, {merge: true})
+        .then(() => console.log('added html'))
+        .catch((error) => console.log('error html:', error));
+    } else if (field === 'text') {
+      console.log('find text')
+      docRef.set({text: val}, {merge: true})
+        .then(() => console.log('added text'))
+        .catch((error) => console.log('error text:', error));
+    }
+  })
+
+  busboy_parser2.end(req.rawBody)
+}
+
 // Take the text parameter passed to this HTTP endpoint and insert it into
 // Cloud Firestore under the path /messages/:documentId/original
 exports.addMessage = functions.https.onRequest(async (req, res) => {
@@ -23,56 +70,20 @@ exports.addMessage = functions.https.onRequest(async (req, res) => {
     busboy_parser.on("field", async (field, val) => {
       console.log(`Processed field ${field}: ${val}.`);
       if (field === 'envelope') {
-        uid = await admin.auth().getUserByEmail(JSON.parse(val).from)
-          .then((userRecord) => {
-            // See the UserRecord reference doc for the contents of userRecord.
-            console.log('Successfully fetched user data:', userRecord.toJSON());
-            return userRecord.uid;
-          })
+        firebaseGetUserByEmail(JSON.parse(val).from)
+            .then((uid) => {
+              console.log('get uid', uid);
+              addMessageToFireStore(uid, req);
+              return;
+            })
           .catch((error) => {
-            console.log('Error fetching user data:', error);
+            console.log('Error adding message for user:', error);
             throw error;
           });
-        console.log('get uid inside', uid);
-
-        return;
       }
     })
 
     busboy_parser.end(req.rawBody)
-
-    const busboy_parser2 = new busboy({ headers: req.headers })
-
-    let docRef = fireStore.collection('test_list').doc();
-    docRef.set({
-        tags: ['__all__'],
-        timestamp: admin.firestore.FieldValue.serverTimestamp(),
-      }, {merge: true})
-      .then(() => console.log('added tags'))
-      .catch((error) => console.log('error tags:', error));
-
-    busboy_parser2.on("field", (field, val) => {
-      console.log(`Processed field ${field}: ${val}.`);
-      if (field === 'subject') {
-        console.log('find subject')
-        docRef.set({title: val}, {merge: true})
-          .then(() => console.log('added subject'))
-          .catch((error) => console.log('error subject:', error));
-      } else if (field === 'html') {
-        console.log('find html')
-        docRef.set({html: val}, {merge: true})
-          .then(() => console.log('added html'))
-          .catch((error) => console.log('error html:', error));
-      } else if (field === 'text') {
-        console.log('find text')
-        docRef.set({text: val}, {merge: true})
-          .then(() => console.log('added text'))
-          .catch((error) => console.log('error text:', error));
-      }
-    })
-
-    busboy_parser2.end(req.rawBody)
-
   } finally {
     res.send(200);
   }
