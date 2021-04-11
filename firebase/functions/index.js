@@ -25,10 +25,10 @@ function firebaseGetUserByEmail(email) {
     });
 }
 
-function addMessageToFireStore(uid, req) {
-  const busboy_parser2 = new busboy({ headers: req.headers })
+function addMessageToFireStore(userId, req) {
+  const busboy_parser = new busboy({ headers: req.headers })
 
-  let docRef = fireStore.collection('test_list').doc();
+  let docRef = fireStore.collection('user_data/' + userId + '/snippets').doc();
   docRef.set({
       tags: ['__all__'],
       timestamp: admin.firestore.FieldValue.serverTimestamp(),
@@ -36,7 +36,7 @@ function addMessageToFireStore(uid, req) {
     .then(() => console.log('added tags'))
     .catch((error) => console.log('error tags:', error));
 
-  busboy_parser2.on("field", (field, val) => {
+  busboy_parser.on("field", (field, val) => {
     console.log(`Processed field ${field}: ${val}.`);
     if (field === 'subject') {
       console.log('find subject')
@@ -56,7 +56,7 @@ function addMessageToFireStore(uid, req) {
     }
   })
 
-  busboy_parser2.end(req.rawBody)
+  busboy_parser.end(req.rawBody)
 }
 
 // Take the text parameter passed to this HTTP endpoint and insert it into
@@ -71,9 +71,9 @@ exports.addMessage = functions.https.onRequest(async (req, res) => {
       console.log(`Processed field ${field}: ${val}.`);
       if (field === 'envelope') {
         firebaseGetUserByEmail(JSON.parse(val).from)
-            .then((uid) => {
-              console.log('get uid', uid);
-              addMessageToFireStore(uid, req);
+            .then((userId) => {
+              console.log('get uid', userId);
+              addMessageToFireStore(userId, req);
               return;
             })
           .catch((error) => {
@@ -90,7 +90,7 @@ exports.addMessage = functions.https.onRequest(async (req, res) => {
 });
 
 exports.tagListOnUpdate = functions.firestore
-  .document('test_list/{docId}')
+  .document('user_data/{userId}/tags/{docId}')
   .onUpdate((change, context) => {
     const newValue = change.after.data();
     const previousValue = change.before.data();
@@ -104,7 +104,7 @@ exports.tagListOnUpdate = functions.firestore
     console.log('removedTags: ', removedTags);
     console.log('addedTags: ', addedTags);
 
-    const tagListRef = fireStore.collection('tag_list');
+    const tagListRef = fireStore.collection('user_data/' + context.params.userId + '/tags');
 
     removedTags.forEach((tag) => {
       tagListRef.doc(tag).get()
@@ -158,9 +158,9 @@ exports.tagListOnUpdate = functions.firestore
   })
 
 exports.testListOnDelete = functions.firestore
-  .document('test_list/{docId}')
+  .document('user_data/{userId}/snippets/{docId}')
   .onDelete((snapshot, context) => {
-    const tagListRef = fireStore.collection('tag_list');
+    const tagListRef = fireStore.collection('user_data/' + context.params.userId + '/tags');
 
     const data = snapshot.data();
     data['tags']
