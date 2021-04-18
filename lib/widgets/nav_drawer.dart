@@ -1,9 +1,14 @@
-import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import 'package:myapp/models/user.dart';
 
 class NavDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final userData = Provider.of<MyUser>(context);
+
     return Drawer(
         child: ListView(padding: EdgeInsets.zero, children: <Widget>[
       DrawerHeader(
@@ -16,7 +21,11 @@ class NavDrawer extends StatelessWidget {
         ),
       ),
       StreamBuilder<QuerySnapshot>(
-          stream: FirebaseFirestore.instance.collection('tag_list').snapshots(),
+          stream: FirebaseFirestore.instance
+              .collection('user_data')
+              .doc(userData.uid)
+              .collection('tags')
+              .snapshots(),
           builder:
               (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
             if (snapshot.hasError) return new Text('Error: ${snapshot.error}');

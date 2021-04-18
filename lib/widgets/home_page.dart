@@ -2,8 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'package:myapp/models/user.dart';
 import 'package:myapp/services/firebase_auth_service.dart';
-
 import 'package:myapp/widgets/nav_drawer.dart';
 import 'package:myapp/widgets/item_list.dart';
 import 'package:myapp/widgets/item_editor.dart';
@@ -87,7 +87,12 @@ class _MyHomePageState extends State<MyHomePage> {
                 onPressed: () async {
                   print(
                       'Add new title ${titleController.text} with article ${contentController.text}');
-                  await FirebaseFirestore.instance.collection('test_list').add({
+                  final userData = Provider.of<MyUser>(context);
+                  await FirebaseFirestore.instance
+                      .collection('user_data')
+                      .doc(userData.uid)
+                      .collection('snippets')
+                      .add({
                     'title': titleController.text,
                     'uri': contentController.text,
                     'tags': ['__all__'],

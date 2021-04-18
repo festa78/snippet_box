@@ -1,7 +1,10 @@
-import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:easy_web_view/easy_web_view.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import 'package:myapp/models/user.dart';
 
 class ItemList extends StatelessWidget {
   ItemList(this.queryTags, this.queryTerms);
@@ -46,9 +49,13 @@ class ItemList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final userData = Provider.of<MyUser>(context);
+
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
-          .collection('test_list')
+          .collection('user_data')
+          .doc(userData.uid)
+          .collection('snippets')
           .orderBy('timestamp', descending: true)
           .where('tags', arrayContainsAny: this.queryTags)
           .snapshots(),
@@ -98,6 +105,8 @@ class ContentViewer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final userData = Provider.of<MyUser>(context);
+
     return Scaffold(
       appBar: AppBar(
         title: Text(this.document['title']),
@@ -110,7 +119,9 @@ class ContentViewer extends StatelessWidget {
             onPressed: () async => await Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => TagEditor(this.document.id),
+                builder: (context) {
+                  return TagEditor(this.document.id, userData.uid);
+                },
               ),
             ),
           ),
@@ -122,7 +133,9 @@ class ContentViewer extends StatelessWidget {
             onPressed: () async {
               print('Delete document ${this.document.id}');
               await FirebaseFirestore.instance
-                  .collection('test_list')
+                  .collection('user_data')
+                  .doc(userData.uid)
+                  .collection('snippets')
                   .doc(this.document.id)
                   .delete();
               Navigator.of(context).pop();
@@ -136,9 +149,10 @@ class ContentViewer extends StatelessWidget {
 }
 
 class TagEditor extends StatefulWidget {
-  TagEditor(this.documentID);
+  TagEditor(this.documentID, this.userID);
 
   final String documentID;
+  final String userID;
 
   @override
   _TagEditorState createState() => _TagEditorState();
@@ -152,7 +166,9 @@ class _TagEditorState extends State<TagEditor> {
     super.initState();
 
     this._tags = FirebaseFirestore.instance
-        .collection('test_list')
+        .collection('user_data')
+        .doc(widget.userID)
+        .collection('snippets')
         .doc(widget.documentID)
         .get()
         .then((doc) {
@@ -191,6 +207,8 @@ class _TagEditorState extends State<TagEditor> {
 
   @override
   Widget build(BuildContext context) {
+    final userData = Provider.of<MyUser>(context);
+
     return FutureBuilder(
       future: this._tags,
       builder: (context, snapshot) {
@@ -219,7 +237,9 @@ class _TagEditorState extends State<TagEditor> {
                   print(
                       'Assign tags ${snapshot.data} to document ${widget.documentID}');
                   FirebaseFirestore.instance
-                      .collection('test_list')
+                      .collection('user_data')
+                      .doc(userData.uid)
+                      .collection('snippets')
                       .doc(widget.documentID)
                       .update({
                     'tags': snapshot.data,
