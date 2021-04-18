@@ -90,7 +90,7 @@ exports.addMessage = functions.https.onRequest(async (req, res) => {
 });
 
 exports.tagListOnUpdate = functions.firestore
-  .document('user_data/{userId}/tags/{docId}')
+  .document('user_data/{userId}/snippets/{docId}')
   .onUpdate((change, context) => {
     const newValue = change.after.data();
     const previousValue = change.before.data();
