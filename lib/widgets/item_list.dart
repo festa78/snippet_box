@@ -25,19 +25,22 @@ class ItemList extends StatelessWidget {
     );
   }
 
-  _getContent(document) async {
-    if (await canLaunch(document['uri'])) {
+  _getContent(DocumentSnapshot document) async {
+    if (document.data().containsKey('uri') &&
+        await canLaunch(document['uri'])) {
       return EasyWebView(
         src: document['uri'],
         onLoaded: () => (print('loaded uri')),
       );
-    } else if (!document['html'].isEmpty) {
+    } else if (document.data().containsKey('html') &&
+        !document['html'].isEmpty) {
       return EasyWebView(
         src: document['html'],
         isHtml: true,
         onLoaded: () => (print('loaded html')),
       );
-    } else if (!document['text'].isEmpty) {
+    } else if (document.data().containsKey('text') &&
+        !document['text'].isEmpty) {
       return SingleChildScrollView(
         scrollDirection: Axis.vertical,
         child: Text(document['text']),
