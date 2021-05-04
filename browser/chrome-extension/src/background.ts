@@ -7,8 +7,10 @@ import 'firebase/functions';
 var auth = firebase.auth();
 var functions = firebase.functions();
 
+// TODO: A better way to switch environment.
 if (true) {
   console.log("use emulator");
+  // auth.useEmulator("http://localhost:9099");
   functions.useEmulator("localhost", 5001);
 } else {
   console.log("Do not use emulator");
@@ -21,7 +23,7 @@ chrome.runtime.onMessage.addListener(
       provider.addScope('https://www.googleapis.com/auth/contacts.readonly');
       firebase.auth().signInWithPopup(provider).then(function (result) {
         var user = result.user;
-        var status = 200;
+        var status = '200';
         sendResponse({ user, status });
       }).catch(function (error) {
         // Handle Errors here.

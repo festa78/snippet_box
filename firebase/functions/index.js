@@ -192,3 +192,18 @@ exports.testListOnDelete = functions.firestore
           .catch((error) => console.log('error tag update:', error));
     });
   })
+
+exports.sendUrlToDb = functions.https.onCall((data, context) => {
+    functions.logger.info("send URL to DB!", { structuredData: true });
+    const userId = data.uid;
+    const uri = data.uri;
+
+    return fireStore.collection('user_data/' + userId + '/snippets').doc().set({
+        tags: ['__all__'],
+        timestamp: admin.firestore.FieldValue.serverTimestamp(),
+        uri: uri
+    }, { merge: true })
+        .then(() => console.log('added uri'))
+        .catch((error) => console.log('error adding uri:', error));
+
+});

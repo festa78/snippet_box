@@ -13,10 +13,6 @@
   },
   "author": "",
   "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/chibat/chrome-extension-typescript-starter.git"
-  },
   "dependencies": {
     "firebase": "^8.4.3",
     "react": "^17.0.1",
