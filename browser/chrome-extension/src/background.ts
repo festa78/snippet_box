@@ -8,7 +8,7 @@ var auth = firebase.auth();
 var functions = firebase.functions();
 
 // TODO: A better way to switch environment.
-if (true) {
+if (false) {
   console.log("use emulator");
   // auth.useEmulator("http://localhost:9099");
   functions.useEmulator("localhost", 5001);

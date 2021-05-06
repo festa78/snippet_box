@@ -193,6 +193,7 @@ exports.testListOnDelete = functions.firestore
     });
   })
 
+// TODO: Parse URL to get more information.
 exports.sendUrlToDb = functions.https.onCall((data, context) => {
     functions.logger.info("send URL to DB!", { structuredData: true });
     const userId = data.uid;
@@ -201,7 +202,8 @@ exports.sendUrlToDb = functions.https.onCall((data, context) => {
     return fireStore.collection('user_data/' + userId + '/snippets').doc().set({
         tags: ['__all__'],
         timestamp: admin.firestore.FieldValue.serverTimestamp(),
-        uri: uri
+        uri: uri,
+        title: uri
     }, { merge: true })
         .then(() => console.log('added uri'))
         .catch((error) => console.log('error adding uri:', error));
