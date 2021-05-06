@@ -38,21 +38,14 @@ const Popup = () => {
   }, []);
 
   const Login = () => {
-    chrome.storage.sync.get("uid", ({ uid }) => {
-      if (!uid) {
-        // User is signed out.
-        chrome.runtime.sendMessage({ name: "login" }, response => {
-          if (response.status !== "200") {
-            console.error("Error on login request", response.error);
-            alert(response.error);
-            return;
-          }
-          console.log("Login succeeded:", response.user);
-          setUid(response.user.uid);
-        });
+    chrome.runtime.sendMessage({ name: "login" }, response => {
+      if (response.status !== "200") {
+        console.error("Error on login request", response.error);
+        alert(response.error);
+        return;
       }
-
-      setUid(uid);
+      console.log("Login succeeded:", response.user);
+      setUid(response.user.uid);
     });
   }
 
