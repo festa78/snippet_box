@@ -31,6 +31,12 @@ const Popup = () => {
     });
   }, []);
 
+  useEffect(() => {
+    chrome.storage.sync.get("uid", ({ uid }) => {
+      setUid(uid);
+    });
+  }, []);
+
   const Login = () => {
     chrome.storage.sync.get("uid", ({ uid }) => {
       if (!uid) {
