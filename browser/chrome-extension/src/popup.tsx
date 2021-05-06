@@ -23,6 +23,7 @@ const SendUriToDb = (uri: string | undefined) => {
 const Popup = () => {
   const [uid, setUid] = useState<string>("");
   const [currentURL, setCurrentURL] = useState<string>();
+  const [isUrlSaved, setIsUrlSaved] = useState<boolean>(false);
 
   useEffect(() => {
     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
@@ -68,6 +69,22 @@ const Popup = () => {
   }
 
   // User is signed in.
+  let view: React.ReactElement;
+  if (!isUrlSaved) {
+    view = (
+      <button
+        onClick={() => {
+          SendUriToDb(currentURL);
+          setIsUrlSaved(true);
+        }}
+      >
+        Save current URL to SnippetBox
+      </button>
+    );
+  } else {
+    view = (<p>"URL saved!"</p>);
+  }
+
   return (
     <>
       <ul>
@@ -75,11 +92,7 @@ const Popup = () => {
         <li>Current Time: {new Date().toLocaleTimeString()}</li>
         <li>User ID: {uid}</li>
       </ul>
-      <button
-        onClick={() => SendUriToDb(currentURL)}
-      >
-        Save current URL to SnippetBox
-      </button>
+      {view}
     </>
   );
 };
