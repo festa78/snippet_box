@@ -17,7 +17,9 @@
     "busboy": "^0.3.1",
     "firebase": "^7.24.0",
     "firebase-admin": "^9.5.0",
-    "firebase-functions": "^3.13.0"
+    "firebase-functions": "^3.13.0",
+    "jsdom": "^16.5.3",
+    "node-fetch": "^2.6.1"
   },
   "devDependencies": {
     "eslint": "^5.12.0",

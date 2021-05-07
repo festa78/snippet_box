@@ -3,12 +3,15 @@ const firebase = require("firebase");
 // Required for side-effects
 require("firebase/firestore");
 
-const functions = require('firebase-functions');
-const busboy = require('busboy')
 
 // The Firebase Admin SDK to access Cloud Firestore.
 const admin = require('firebase-admin');
+const functions = require('firebase-functions');
 admin.initializeApp(functions.config().firebase)
+
+const busboy = require('busboy')
+const fetch = require('node-fetch');
+const { JSDOM } = require('jsdom');
 
 var fireStore = admin.firestore()
 
@@ -193,19 +196,30 @@ exports.testListOnDelete = functions.firestore
     });
   })
 
-// TODO: Parse URL to get more information.
+function getHtmlTitle(url) {
+  return new Promise((resolve, reject) => {
+    fetch(url)
+      .then(response => response.text())
+      .then(data => {
+        const dom = new JSDOM(data);
+        resolve(dom.window.document.title);
+      })
+      .catch(error => reject(error));
+  });
+}
+
 exports.sendUrlToDb = functions.https.onCall((data, context) => {
     functions.logger.info("send URL to DB!", { structuredData: true });
     const userId = data.uid;
     const uri = data.uri;
 
-    return fireStore.collection('user_data/' + userId + '/snippets').doc().set({
+    return getHtmlTitle(uri)
+      .then(title => fireStore.collection('user_data/' + userId + '/snippets').doc().set({
         tags: ['__all__'],
         timestamp: admin.firestore.FieldValue.serverTimestamp(),
         uri: uri,
-        title: uri
-    }, { merge: true })
-        .then(() => console.log('added uri'))
-        .catch((error) => console.log('error adding uri:', error));
-
+        title: title
+    }, { merge: true }))
+      .then(() => console.log('added uri'))
+      .catch((error) => console.log('error adding uri:', error));
 });
