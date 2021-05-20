@@ -269,6 +269,10 @@ exports.sendUrlToDb = functions.https.onCall((data, context) => {
   const userId = data.uid;
   const uri = data.uri;
 
+  if (!context.auth) {
+    throw new functions.https.HttpsError('permission-denied', 'Auth Error');
+  }
+
   return getHtmlTitle(uri)
     .then(title => fireStore.collection('user_data/' + userId + '/snippets').doc().set({
       tags: ['__all__'],
@@ -280,7 +284,6 @@ exports.sendUrlToDb = functions.https.onCall((data, context) => {
     .catch((error) => console.log('error adding uri:', error));
 });
 
-// [START get_firebase_user]
 async function getFirebaseUser(req, res, next) {
   functions.logger.log('Check if request is authorized with Firebase ID token');
 
@@ -309,9 +312,7 @@ async function getFirebaseUser(req, res, next) {
     return res.status(403).send('Unauthorized');
   }
 }
-// [END get_firebase_user]
 
-// [START get_algolia_user_token]
 // This complex HTTP function will be created as an ExpressJS app:
 // https://expressjs.com/en/4x/api.html
 const app = require('express')();
@@ -350,4 +351,3 @@ app.get('/', (req, res) => {
 // Finally, pass our ExpressJS app to Cloud Functions as a function
 // called 'getSearchKey';
 exports.getSearchKey = functions.https.onRequest(app);
-// [END get_algolia_user_token]
