@@ -26,28 +26,36 @@ class ItemList extends StatelessWidget {
   }
 
   _getContent(DocumentSnapshot document) async {
-    if (document.data().containsKey('uri') &&
-        await canLaunch(document['uri'])) {
+    // FIXME: containsKey doesn't work.
+    try {
       return EasyWebView(
         src: document['uri'],
         onLoaded: () => (print('loaded uri')),
       );
-    } else if (document.data().containsKey('html') &&
-        !document['html'].isEmpty) {
+    } catch (e) {
+      print(e);
+    }
+
+    try {
       return EasyWebView(
         src: document['html'],
         isHtml: true,
         onLoaded: () => (print('loaded html')),
       );
-    } else if (document.data().containsKey('text') &&
-        !document['text'].isEmpty) {
+    } catch (e) {
+      print(e);
+    }
+
+    try {
       return SingleChildScrollView(
         scrollDirection: Axis.vertical,
         child: Text(document['text']),
       );
-    } else {
-      throw 'Cannot read document $document';
+    } catch (e) {
+      print(e);
     }
+
+    throw 'Cannot read document $document';
   }
 
   @override
