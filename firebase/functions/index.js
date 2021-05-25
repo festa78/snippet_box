@@ -20,8 +20,13 @@ const algoliasearch = require('algoliasearch');
 const ALGOLIA_ID = functions.config().algolia.app_id;
 const ALGOLIA_ADMIN_KEY = functions.config().algolia.api_key;
 const ALGOLIA_SEARCH_KEY = functions.config().algolia.search_key;
-
-const ALGOLIA_INDEX_NAME = 'snippets';
+var ALGOLIA_INDEX_NAME = '';
+if (functions.config().is_test) {
+  console.log("using test index for algolia.")
+  ALGOLIA_INDEX_NAME = functions.config().algolia.test_index_name;
+} else {
+  ALGOLIA_INDEX_NAME = functions.config().algolia.index_name;
+}
 const client = algoliasearch(ALGOLIA_ID, ALGOLIA_ADMIN_KEY);
 
 function firebaseGetUserByEmail(email) {
@@ -93,9 +98,12 @@ exports.addMessage = functions.https.onRequest(async (req, res) => {
             throw error;
           });
       }
-    })
+    });
 
     busboy_parser.end(req.rawBody)
+  } catch (error) {
+    console.log(error);
+    res.send(400);
   } finally {
     res.send(200);
   }
