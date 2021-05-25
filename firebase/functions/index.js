@@ -3,11 +3,10 @@ const firebase = require("firebase");
 // Required for side-effects
 require("firebase/firestore");
 
-
 // The Firebase Admin SDK to access Cloud Firestore.
 const admin = require('firebase-admin');
 const functions = require('firebase-functions');
-admin.initializeApp(functions.config().firebase)
+admin.initializeApp({credential: admin.credential.applicationDefault()})
 
 const busboy = require('busboy')
 const fetch = require('node-fetch');
@@ -20,8 +19,13 @@ const algoliasearch = require('algoliasearch');
 const ALGOLIA_ID = functions.config().algolia.app_id;
 const ALGOLIA_ADMIN_KEY = functions.config().algolia.api_key;
 const ALGOLIA_SEARCH_KEY = functions.config().algolia.search_key;
-
-const ALGOLIA_INDEX_NAME = 'snippets';
+var ALGOLIA_INDEX_NAME = '';
+if (functions.config().is_test) {
+  console.log("using test index for algolia.")
+  ALGOLIA_INDEX_NAME = functions.config().algolia.test_index_name;
+} else {
+  ALGOLIA_INDEX_NAME = functions.config().algolia.index_name;
+}
 const client = algoliasearch(ALGOLIA_ID, ALGOLIA_ADMIN_KEY);
 
 function firebaseGetUserByEmail(email) {
@@ -80,9 +84,11 @@ exports.addMessage = functions.https.onRequest(async (req, res) => {
     const busboy_parser = new busboy({ headers: req.headers })
 
     busboy_parser.on("field", async (field, val) => {
-      console.log(`Processed field ${field}: ${val}.`);
-      if (field === 'envelope') {
-        firebaseGetUserByEmail(JSON.parse(val).from)
+      try {
+        console.log(`Processed field ${field}: ${val}.`);
+        if (field === 'envelope') {
+          console.log('find envelope')
+          firebaseGetUserByEmail(JSON.parse(val).from)
             .then((userId) => {
               console.log('get uid', userId);
               addMessageToFireStore(userId, req);
@@ -92,10 +98,24 @@ exports.addMessage = functions.https.onRequest(async (req, res) => {
             console.log('Error adding message for user:', error);
             throw error;
           });
+        }
+      } catch (error) {
+        console.log('Error', error);
       }
     })
 
+    busboy_parser.on("error", () => {
+      console.log('error');
+    });
+
+    busboy_parser.on("finish", () => {
+      console.log('finished');
+    });
+
     busboy_parser.end(req.rawBody)
+  } catch (error) {
+    console.log(error);
+    res.send(400);
   } finally {
     res.send(200);
   }
