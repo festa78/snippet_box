@@ -41,78 +41,63 @@ function firebaseGetUserByEmail(email) {
     });
 }
 
-function addMessageToFireStore(userId, req) {
-  const busboy_parser = new busboy({ headers: req.headers })
-
-  let docRef = fireStore.collection('user_data/' + userId + '/snippets').doc();
-  docRef.set({
-      tags: ['__all__'],
-      timestamp: admin.firestore.FieldValue.serverTimestamp(),
-    }, {merge: true})
-    .then(() => console.log('added tags'))
-    .catch((error) => console.log('error tags:', error));
-
-  busboy_parser.on("field", (field, val) => {
-    console.log(`Processed field ${field}: ${val}.`);
-    if (field === 'subject') {
-      console.log('find subject')
-      docRef.set({title: val}, {merge: true})
-        .then(() => console.log('added subject'))
-        .catch((error) => console.log('error subject:', error));
-    } else if (field === 'html') {
-      console.log('find html')
-      docRef.set({html: val}, {merge: true})
-        .then(() => console.log('added html'))
-        .catch((error) => console.log('error html:', error));
-    } else if (field === 'text') {
-      console.log('find text')
-      docRef.set({text: val}, {merge: true})
-        .then(() => console.log('added text'))
-        .catch((error) => console.log('error text:', error));
-    }
-  })
-
-  busboy_parser.end(req.rawBody)
-}
-
 // Take the text parameter passed to this HTTP endpoint and insert it into
 // Cloud Firestore under the path /messages/:documentId/original
 exports.addMessage = functions.https.onRequest(async (req, res) => {
   try {
-    console.log('Email recieved')
+    await new Promise((resolve, reject) => {
+      console.log('Email recieved')
 
-    const busboy_parser = new busboy({ headers: req.headers })
+      let email_data = {};
 
-    busboy_parser.on("field", async (field, val) => {
-      try {
+      const busboy_parser = new busboy({ headers: req.headers })
+
+      busboy_parser.on("field", (field, val) => {
         console.log(`Processed field ${field}: ${val}.`);
         if (field === 'envelope') {
           console.log('find envelope')
-          firebaseGetUserByEmail(JSON.parse(val).from)
-            .then((userId) => {
-              console.log('get uid', userId);
-              addMessageToFireStore(userId, req);
-              return;
-            })
-          .catch((error) => {
-            console.log('Error adding message for user:', error);
-            throw error;
-          });
+          email_data['email'] = JSON.parse(val).from;
+        } else if (field === 'subject') {
+          console.log('find subject')
+          email_data['title'] = val;
+        } else if (field === 'html') {
+          console.log('find html')
+          email_data[field] = val;
+        } else if (field === 'text') {
+          console.log('find text')
+          email_data[field] = val;
         }
-      } catch (error) {
-        console.log('Error', error);
-      }
-    })
+      })
 
-    busboy_parser.on("error", () => {
-      console.log('error');
+      busboy_parser.on("error", () => {
+        console.log('busboy error');
+        reject('busboy error');
+      });
+
+      busboy_parser.on("finish", () => {
+        email_data['tags'] = ['__all__'];
+        email_data['timestamp'] = admin.firestore.FieldValue.serverTimestamp();
+        console.log('busboy finished', email_data);
+
+        firebaseGetUserByEmail(email_data['email'])
+          .then((userId) => {
+            console.log('get uid', userId);
+            return fireStore.collection('user_data/' + userId + '/snippets')
+              .doc()
+              .set(email_data);
+          })
+          .then(() => {
+            console.log('added tags');
+            resolve();
+          })
+          .catch((error) => {
+            console.log('error tags:', error);
+            reject(error);
+          });
+        });
+
+      busboy_parser.end(req.rawBody);
     });
-
-    busboy_parser.on("finish", () => {
-      console.log('finished');
-    });
-
-    busboy_parser.end(req.rawBody)
   } catch (error) {
     console.log(error);
     res.send(400);
