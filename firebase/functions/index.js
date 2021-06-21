@@ -16,17 +16,19 @@ var fireStore = admin.firestore()
 
 const algoliasearch = require('algoliasearch');
 
-const ALGOLIA_ID = functions.config().algolia.app_id;
-const ALGOLIA_ADMIN_KEY = functions.config().algolia.api_key;
-const ALGOLIA_SEARCH_KEY = functions.config().algolia.search_key;
-var ALGOLIA_INDEX_NAME = '';
-if (functions.config().is_test) {
-  console.log("using test index for algolia.")
-  ALGOLIA_INDEX_NAME = functions.config().algolia.test_index_name;
-} else {
-  ALGOLIA_INDEX_NAME = functions.config().algolia.index_name;
+function getAlgoliaClient() {
+  const ALGOLIA_ID = functions.config().algolia.app_id;
+  const ALGOLIA_ADMIN_KEY = functions.config().algolia.api_key;
+  const ALGOLIA_SEARCH_KEY = functions.config().algolia.search_key;
+  var ALGOLIA_INDEX_NAME = '';
+  if (functions.config().is_test) {
+    console.log("using test index for algolia.")
+    ALGOLIA_INDEX_NAME = functions.config().algolia.test_index_name;
+  } else {
+    ALGOLIA_INDEX_NAME = functions.config().algolia.index_name;
+  }
+  return algoliasearch(ALGOLIA_ID, ALGOLIA_ADMIN_KEY);
 }
-const client = algoliasearch(ALGOLIA_ID, ALGOLIA_ADMIN_KEY);
 
 function firebaseGetUserByEmail(email) {
   return admin.auth().getUserByEmail(email)
@@ -116,6 +118,7 @@ exports.snippetsOnCreated = functions.firestore
     snippet.objectID = context.params.docId;
 
     // Write to the algolia index
+    const client = getAlgoliaClient();
     const index = client.initIndex(ALGOLIA_INDEX_NAME);
     return index.saveObject(snippet)
       .then(() => console.log('Add snippet to Algoria'))
@@ -196,6 +199,7 @@ exports.snippetsOnUpdate = functions.firestore
     newValue.objectID = context.params.docId;
 
     // Write to the algolia index
+    const client = getAlgoliaClient();
     const index = client.initIndex(ALGOLIA_INDEX_NAME);
     return index.saveObject(newValue)
       .then(() => console.log('Update snippet on Algoria'))
@@ -244,6 +248,7 @@ exports.snippetsOnDelete = functions.firestore
     const objectID = context.params.docId;
 
     // Remove the object from Algolia
+    const client = getAlgoliaClient();
     const index = client.initIndex(ALGOLIA_INDEX_NAME);
     index
       .deleteObject(objectID)
@@ -347,6 +352,7 @@ app.get('/', (req, res) => {
   };
 
   // Call the Algolia API to generate a unique key based on our search key
+  const client = getAlgoliaClient();
   const key = client.generateSecuredApiKey(ALGOLIA_SEARCH_KEY, params);
 
   // Then return this key as {key: '...key'}
