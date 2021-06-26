@@ -132,16 +132,16 @@ exports.snippetsOnUpdate = functions.firestore
     const newTags = new Set(newValue['tags']);
     const previousTags = new Set(previousValue['tags']);
 
-    const removedTags = new Set([...previousTags].filter(x => !newTags.has(x)));
-    const addedTags = new Set([...newTags].filter(x => !previousTags.has(x)));
+    const removedTags = [...previousTags].filter(x => !newTags.has(x));
+    const addedTags = [...newTags].filter(x => !previousTags.has(x));
 
     console.log('removedTags: ', removedTags);
     console.log('addedTags: ', addedTags);
 
     const tagListRef = fireStore.collection('user_data/' + context.params.userId + '/tags');
 
-    removedTags.forEach((tag) => {
-      tagListRef.doc(tag).get()
+    const removedTagsPromise = removedTags.map((tag) => {
+      return tagListRef.doc(tag).get()
         .then((tagDoc) => {
           if (tagDoc.exists) {
             console.log('doc exists when removing: ', tagDoc.data()['documents']);
@@ -153,22 +153,23 @@ exports.snippetsOnUpdate = functions.firestore
 
             if (tagDocuments.length) {
               console.log('After removal, doc should still exist.');
-              tagListRef.doc(tag).set({
+              return tagListRef.doc(tag).set({
                 documents: tagDocuments,
                 timestamp: admin.firestore.FieldValue.serverTimestamp(),
               });
             } else {
               console.log('No documents belong to this tag. remove tag document itself');
-              tagListRef.doc(tag).delete();
+              return tagListRef.doc(tag).delete();
             }
           }
           return;
         })
-        .catch((error) => console.log('error tag update:', error));
+        .then(() => console.log('removed tag', tag))
+        .catch((error) => console.log('error tag remove:', error));
       });
 
-    addedTags.forEach((tag) => {
-      tagListRef.doc(tag).get()
+    const addedTagsPromise = addedTags.map((tag) => {
+      return tagListRef.doc(tag).get()
         .then((tagDoc) => {
           let tagDocuments = [];
           if (tagDoc.exists) {
@@ -180,14 +181,15 @@ exports.snippetsOnUpdate = functions.firestore
             tagDocuments.push(context.params.docId);
           }
 
-          console.log('setting docs ', tagDocuments, 'to tag ', tag, 'after addition of ', context.params.docId);
+          console.log('setting docs', tagDocuments, 'to tag', tag, 'after addition of', context.params.docId);
 
           return tagListRef.doc(tag).set({
             documents: tagDocuments,
             timestamp: admin.firestore.FieldValue.serverTimestamp(),
           });
         })
-        .catch((error) => console.log('error tag update:', error));
+        .then(() => console.log('added tag', tag))
+        .catch((error) => console.log('error tag add:', error));
       });
 
     // Add an 'objectID' field which Algolia requires
@@ -195,12 +197,16 @@ exports.snippetsOnUpdate = functions.firestore
 
     // Write to the algolia index
     const index = exports.getAlgoliaIndex();
-    return index.saveObject(newValue)
+    const saveObjectPromise = index.saveObject(newValue)
       .then(() => console.log('Update snippet on Algoria'))
       .catch(error => {
         console.error('Error to update snippet to Algoria', error);
         process.exit(1);
       });
+    
+    promises = removedTagsPromise.concat(addedTagsPromise);
+    promises.push(saveObjectPromise);
+    return Promise.all(promises);
   })
 
 exports.snippetsOnDelete = functions.firestore

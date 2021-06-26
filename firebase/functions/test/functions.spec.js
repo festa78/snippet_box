@@ -103,7 +103,7 @@ describe("addMessage", () => {
 
 describe("snippetsOnCreated", () => {
     const dummy_input = {
-        tag: ['__all__'],
+        tags: ['__all__'],
         email: 'dummy@email.addr',
         title: 'dummy title',
     }
@@ -118,7 +118,7 @@ describe("snippetsOnCreated", () => {
         const wrapped = test.wrap(myFunctions.snippetsOnCreated);
         wrapped(snap, {
             params: {
-                docId: 'dummy_doc'
+                docId: 'dummy_doc',
             }
         });
 
@@ -127,6 +127,56 @@ describe("snippetsOnCreated", () => {
 
         sinon.restore();
     })
+});
+
+describe("snippetsOnUpdate", () => {
+    const dummy_input_before = {
+        tags: ['__all__'],
+        email: 'dummy@email.addr',
+        title: 'dummy title',
+    }
+    const dummy_input_after = {
+        tags: ['new_dummy_tag', '__all__'],
+        email: 'dummy@email.addr',
+        title: 'dummy title',
+    }
+    const beforeSnap = test.firestore.makeDocumentSnapshot(dummy_input_before,
+        'user_data/dummy_user/snippets/dummy_doc');
+    const afterSnap = test.firestore.makeDocumentSnapshot(dummy_input_after,
+        'user_data/dummy_user/snippets/dummy_doc');
+    const change = test.makeChange(beforeSnap, afterSnap);
+
+    afterEach(() => {
+        admin.firestore()
+            .collection('user_data').doc('dummy_user')
+            .collection('tags').doc('new_dummy_tag')
+            .delete()
+            .then(() => console.log('deleted new_dummy_tag'))
+            .catch(() => { throw('failed te delete new_dummy_tag') });
+    });
+
+    it("Properly add tags", () => {
+        return new Promise((resolve, reject) => {
+            try {
+                const indexStub = sinon.fake();
+                indexStub.saveObject = sinon.fake.resolves();
+                sinon.replace(myFunctions, 'getAlgoliaIndex', sinon.fake.returns(indexStub));
+
+                const wrapped = test.wrap(myFunctions.snippetsOnUpdate);
+                wrapped(change, {
+                    params: {
+                        docId: 'dummy_doc',
+                        userId: 'dummy_user',
+                    }
+                }).then((res) => {
+                    sinon.restore();
+                    resolve();
+                });
+            } catch (e) {
+                reject(e);
+            }
+        });
+    });
 });
 
 test.cleanup();
