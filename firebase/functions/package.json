@@ -8,10 +8,10 @@
     "start": "npm run shell",
     "deploy": "firebase deploy --only functions",
     "logs": "firebase functions:log",
-    "test": "mocha test/*.spec.js"
+    "test": "mocha test/*.spec.js -g 'algoria'"
   },
   "engines": {
-    "node": "10"
+    "node": "14"
   },
   "dependencies": {
     "algoliasearch": "^4.9.1",
@@ -21,7 +21,8 @@
     "firebase-admin": "^9.9.0",
     "firebase-functions": "^3.14.1",
     "jsdom": "^16.6.0",
-    "node-fetch": "^2.6.1"
+    "node-fetch": "^2.6.1",
+    "sinon": "^11.1.1"
   },
   "devDependencies": {
     "eslint": "^5.12.0",

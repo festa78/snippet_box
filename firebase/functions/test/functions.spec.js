@@ -2,19 +2,19 @@ const fs = require('fs');
 
 const firebase = require("firebase");
 const admin = require('firebase-admin');
-// admin.initializeApp({credential: admin.credential.applicationDefault()})
 
 var runtimeconfig = JSON.parse(fs.readFileSync('.runtimeconfig.json'))
-runtimeconfig['is_test'] = true;
 
 const test = require('firebase-functions-test')({
     projectId: "flutter-myapp-test",
 }, "test/flutter-myapp-test-294ee9d498d1.json");
+process.env.GCLOUD_PROJECT = "flutter-myapp-test-294ee9d498d1.json"
 
 test.mockConfig(runtimeconfig)
 
 const myFunctions = require("../index");
 const chai = require('chai');
+const sinon = require('sinon');
 const assert = chai.assert;
 
 describe("addMessage", () => {
@@ -99,6 +99,34 @@ describe("addMessage", () => {
             myFunctions.addMessage(req, res);
         });
     });
+});
+
+describe("snippetsOnCreated", () => {
+    const dummy_input = {
+        tag: ['__all__'],
+        email: 'dummy@email.addr',
+        title: 'dummy title',
+    }
+    const snap = test.firestore.makeDocumentSnapshot(dummy_input,
+        'user_data/dummy_user/snippets/dummy_doc');
+
+    it("Properly call algoria client", () => {
+        const indexStub = sinon.fake();
+        indexStub.saveObject = sinon.fake.resolves();
+        sinon.replace(myFunctions, 'getAlgoliaIndex', sinon.fake.returns(indexStub));
+
+        const wrapped = test.wrap(myFunctions.snippetsOnCreated);
+        wrapped(snap, {
+            params: {
+                docId: 'dummy_doc'
+            }
+        });
+
+        let expected = Object.assign({objectID: 'dummy_doc'}, dummy_input);
+        assert.deepEqual(indexStub.saveObject.lastCall.lastArg, expected);
+
+        sinon.restore();
+    })
 });
 
 test.cleanup();
