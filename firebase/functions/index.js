@@ -215,10 +215,10 @@ exports.snippetsOnDelete = functions.firestore
     const tagListRef = fireStore.collection('user_data/' + context.params.userId + '/tags');
 
     const data = snapshot.data();
-    data['tags']
+    const promises = data['tags']
       .filter((tag) => tag !== '__all__')
-      .forEach((tag) => {
-        tagListRef.doc(tag).get()
+      .map((tag) => {
+        return tagListRef.doc(tag).get()
           .then((tagDoc) => {
             if (tagDoc.exists) {
               console.log('doc exists when removing: ', tagDoc.data()['documents']);
@@ -230,18 +230,19 @@ exports.snippetsOnDelete = functions.firestore
 
               if (tagDocuments.length) {
                 console.log('After removal, doc should still exist.');
-                tagListRef.doc(tag).set({
+                return tagListRef.doc(tag).set({
                   documents: tagDocuments,
                   timestamp: admin.firestore.FieldValue.serverTimestamp(),
                 });
               } else {
                 console.log('No documents belong to this tag. remove tag document itself');
-                tagListRef.doc(tag).delete();
+                return tagListRef.doc(tag).delete();
               }
             }
             return;
           })
-          .catch((error) => console.log('error tag update:', error));
+          .then(() => console.log('tag delete done'))
+          .catch((error) => console.log('error tag delete:', error));
     });
 
     // Get Algolia's objectID from the Firebase object key
@@ -249,17 +250,19 @@ exports.snippetsOnDelete = functions.firestore
 
     // Remove the object from Algolia
     const index = exports.getAlgoliaIndex();
-    index
+    const deleteAlgoliaIndexPromise = index
       .deleteObject(objectID)
       .then(() => {
         console.log('Firebase object deleted from Algolia', objectID);
-        return;
       })
       .catch(error => {
         console.error('Error when deleting contact from Algolia', error);
         process.exit(1);
       });
-  })
+
+    promises.push(deleteAlgoliaIndexPromise);
+    return Promise.all(promises);
+  });
 
 function getHtmlTitle(url) {
   return new Promise((resolve, reject) => {

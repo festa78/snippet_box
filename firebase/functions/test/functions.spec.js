@@ -133,12 +133,12 @@ describe("snippetsOnUpdate", () => {
         tags: ['__all__'],
         email: 'dummy@email.addr',
         title: 'dummy title',
-    }
+    };
     const dummy_input_after = {
         tags: ['new_dummy_tag', '__all__'],
         email: 'dummy@email.addr',
         title: 'dummy title',
-    }
+    };
     const beforeSnap = test.firestore.makeDocumentSnapshot(dummy_input_before,
         'user_data/dummy_user/snippets/dummy_doc');
     const afterSnap = test.firestore.makeDocumentSnapshot(dummy_input_after,
@@ -167,10 +167,73 @@ describe("snippetsOnUpdate", () => {
                         docId: 'dummy_doc',
                         userId: 'dummy_user',
                     }
-                }).then((res) => {
+                }).then(() => {
+                    return admin.firestore()
+                        .collection('user_data').doc('dummy_user')
+                        .collection('tags').doc('new_dummy_tag')
+                        .get();
+                }).then((doc) => {
+                    assert(doc.exists);
                     sinon.restore();
                     resolve();
-                });
+                })
+                .catch((error) => reject(error));
+            } catch (e) {
+                reject(e);
+            }
+        });
+    });
+});
+
+describe("snippetsOnDelete", () => {
+    const dummy_input = {
+        tags: ['dummy_tag', '__all__'],
+        email: 'dummy@email.addr',
+        title: 'dummy title',
+    };
+    const dummy_tag = {
+        documents:['dummy_doc']
+    };
+    const snap = test.firestore.makeDocumentSnapshot(dummy_input,
+        'user_data/dummy_user/snippets/dummy_doc');
+
+    it("Properly delete doc", () => {
+        return new Promise((resolve, reject) => {
+            try {
+                const indexStub = sinon.fake();
+                indexStub.deleteObject = sinon.fake.resolves();
+                sinon.replace(myFunctions, 'getAlgoliaIndex', sinon.fake.returns(indexStub));
+
+                const wrapped = test.wrap(myFunctions.snippetsOnDelete);
+                admin.firestore()
+                    .collection('user_data').doc('dummy_user')
+                    .collection('tags').doc('dummy_tag')
+                    .set(dummy_tag)
+                    .then(() => {
+                        return admin.firestore()
+                            .collection('user_data').doc('dummy_user')
+                            .collection('tags').doc('dummy_tag')
+                            .get();
+                    }).then((doc) => {
+                        assert(doc.exists);
+                    }).then(() => {
+                        return wrapped(snap, {
+                            params: {
+                                docId: 'dummy_doc',
+                                userId: 'dummy_user',
+                            }
+                        });
+                    }).then(() => {
+                        return admin.firestore()
+                            .collection('user_data').doc('dummy_user')
+                            .collection('tags').doc('dummy_tag')
+                            .get();
+                    }).then((doc) => {
+                        assert(!doc.exists);
+                        sinon.restore();
+                        resolve();
+                    })
+                    .catch((error) => reject(error));
             } catch (e) {
                 reject(e);
             }
