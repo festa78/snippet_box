@@ -3,13 +3,13 @@ const fs = require('fs');
 const firebase = require("firebase");
 const admin = require('firebase-admin');
 
-var runtimeconfig = JSON.parse(fs.readFileSync('.runtimeconfig.json'))
-
+// Needs to prepare project JSON information.
+// Also needs to set env.process.GCLOUD_PROJECT.
 const test = require('firebase-functions-test')({
     projectId: "flutter-myapp-test",
 }, "test/flutter-myapp-test-294ee9d498d1.json");
-process.env.GCLOUD_PROJECT = "flutter-myapp-test-294ee9d498d1.json"
 
+const runtimeconfig = JSON.parse(fs.readFileSync('.runtimeconfig.json'))
 test.mockConfig(runtimeconfig)
 
 const myFunctions = require("../index");
@@ -44,11 +44,13 @@ describe("addMessage", () => {
                     .get();
             })
             .then((querySnapshot) => {
-                querySnapshot.forEach(doc => {
+                return Promise.all(querySnapshot.docs.map(doc => {
                     console.log('delete doc', doc.id);
                     doc.ref.delete();
-                })
+                }));
             })
+            .then(() => console.log('deleted all docs'))
+            .catch((error) => { throw(error); });
         });
 
     it("return 200", function () {
@@ -71,7 +73,6 @@ describe("addMessage", () => {
         return new Promise((resolve, reject) => {
             const res = {
                 send: (code) => {
-                    console.log(code);
                     admin.auth().getUserByEmail('nonamehorses78@gmail.com')
                         .then((userRecord) => {
                             return admin.firestore()
@@ -82,10 +83,8 @@ describe("addMessage", () => {
                         .then((querySnapshot) => {
                             let idList = [];
                             querySnapshot.forEach((doc) => {
-                                console.log(doc.id, " => ", doc.data());
                                 idList.push(doc.id);
                             })
-                            console.log('num id list', idList.length);
                             assert.equal(idList.length, 1);
                             resolve();
                         })
@@ -93,7 +92,6 @@ describe("addMessage", () => {
                             console.log('Error at addMessage test assertions:', error);
                             reject(error);
                         });
-
                 }
             };
             myFunctions.addMessage(req, res);
@@ -102,6 +100,7 @@ describe("addMessage", () => {
 });
 
 describe("snippetsOnCreated", () => {
+    process.env.GCLOUD_PROJECT = "flutter-myapp-test-294ee9d498d1.json"
     const dummy_input = {
         tags: ['__all__'],
         email: 'dummy@email.addr',

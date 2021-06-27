@@ -8,7 +8,7 @@
     "start": "npm run shell",
     "deploy": "firebase deploy --only functions",
     "logs": "firebase functions:log",
-    "test": "mocha test/*.spec.js -g 'update'"
+    "test": "mocha test/*.spec.js"
   },
   "engines": {
     "node": "14"
