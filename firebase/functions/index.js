@@ -69,7 +69,7 @@ exports.addMessage = functions.https.onRequest(async (req, res) => {
 
       busboy_parser.on("error", () => {
         console.log('busboy error');
-        reject('busboy error');
+        reject(new Error('busboy error'));
       });
 
       busboy_parser.on("finish", () => {
@@ -87,6 +87,7 @@ exports.addMessage = functions.https.onRequest(async (req, res) => {
           .then(() => {
             console.log('added tags');
             resolve();
+            return;
           })
           .catch((error) => {
             console.log('error tags:', error);
@@ -162,6 +163,7 @@ exports.snippetsOnUpdate = functions.firestore
               return tagListRef.doc(tag).delete();
             }
           }
+          // eslint-disable-next-line consistent-return
           return;
         })
         .then(() => console.log('removed tag', tag))
@@ -239,6 +241,7 @@ exports.snippetsOnDelete = functions.firestore
                 return tagListRef.doc(tag).delete();
               }
             }
+            // eslint-disable-next-line consistent-return
             return;
           })
           .then(() => console.log('tag delete done'))
@@ -254,6 +257,7 @@ exports.snippetsOnDelete = functions.firestore
       .deleteObject(objectID)
       .then(() => {
         console.log('Firebase object deleted from Algolia', objectID);
+        return;
       })
       .catch(error => {
         console.error('Error when deleting contact from Algolia', error);
@@ -264,7 +268,7 @@ exports.snippetsOnDelete = functions.firestore
     return Promise.all(promises);
   });
 
-function getHtmlTitle(url) {
+exports.getHtmlTitle = (url) => {
   return new Promise((resolve, reject) => {
     fetch(url)
       .then(response => response.text())
@@ -285,7 +289,7 @@ exports.sendUrlToDb = functions.https.onCall((data, context) => {
     throw new functions.https.HttpsError('permission-denied', 'Auth Error');
   }
 
-  return getHtmlTitle(uri)
+  return exports.getHtmlTitle(uri)
     .then(title => fireStore.collection('user_data/' + userId + '/snippets').doc().set({
       tags: ['__all__'],
       timestamp: admin.firestore.FieldValue.serverTimestamp(),

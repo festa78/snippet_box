@@ -46,14 +46,14 @@ describe("addMessage", () => {
             .then((querySnapshot) => {
                 return Promise.all(querySnapshot.docs.map(doc => {
                     console.log('delete doc', doc.id);
-                    doc.ref.delete();
+                    return doc.ref.delete();
                 }));
             })
             .then(() => console.log('deleted all docs'))
             .catch((error) => { throw(error); });
         });
 
-    it("return 200", function () {
+    it("return 200", () => {
         return new Promise((resolve, reject) => {
             const res = {
                 send: (code) => {
@@ -69,7 +69,7 @@ describe("addMessage", () => {
         });
     });
 
-    it("Properly parse and add email message", function () {
+    it("Properly parse and add email message", () => {
         return new Promise((resolve, reject) => {
             const res = {
                 send: (code) => {
@@ -87,6 +87,7 @@ describe("addMessage", () => {
                             })
                             assert.equal(idList.length, 1);
                             resolve();
+                            return;
                         })
                         .catch((error) => {
                             console.log('Error at addMessage test assertions:', error);
@@ -151,7 +152,7 @@ describe("snippetsOnUpdate", () => {
             .collection('tags').doc('new_dummy_tag')
             .delete()
             .then(() => console.log('deleted new_dummy_tag'))
-            .catch(() => { throw('failed te delete new_dummy_tag') });
+            .catch(() => { throw(Error('failed te delete new_dummy_tag')) });
     });
 
     it("Properly add tags", () => {
@@ -176,6 +177,7 @@ describe("snippetsOnUpdate", () => {
                     assert(doc.exists);
                     sinon.restore();
                     resolve();
+                    return;
                 })
                 .catch((error) => reject(error));
             } catch (e) {
@@ -216,7 +218,6 @@ describe("snippetsOnDelete", () => {
                             .get();
                     }).then((doc) => {
                         assert(doc.exists);
-                    }).then(() => {
                         return wrapped(snap, {
                             params: {
                                 docId: 'dummy_doc',
@@ -232,8 +233,56 @@ describe("snippetsOnDelete", () => {
                         assert(!doc.exists);
                         sinon.restore();
                         resolve();
+                        return;
                     })
                     .catch((error) => reject(error));
+            } catch (e) {
+                reject(e);
+            }
+        });
+    });
+});
+
+describe("sendUrlToDb", () => {
+    const dummy_input = {
+        uid: 'dummy_user',
+        uri: 'dummy_uri',
+    };
+
+    afterEach(() => {
+        return admin.firestore().collection('user_data/dummy_user/snippets')
+                    .where("title", '==', 'dummy html title')
+                    .get()
+            .then((querySnapshot) => {
+                return Promise.all(querySnapshot.docs.map(doc => {
+                    console.log('delete doc', doc.id);
+                    return doc.ref.delete();
+                }));
+            })
+            .then(() => console.log('deleted all docs'))
+            .catch((error) => { throw(error); });
+        });
+
+
+    it("Properly send URL to DB", () => {
+        return new Promise((resolve, reject) => {
+            try {
+                sinon.replace(myFunctions, 'getHtmlTitle', sinon.fake.resolves('dummy html title'));
+
+                const wrapped = test.wrap(myFunctions.sendUrlToDb);
+                wrapped(dummy_input, {
+                    auth: true,
+                }).then(() => {
+                    return admin.firestore().collection('user_data/dummy_user/snippets')
+                        .where("title", '==', 'dummy html title')
+                        .get();
+                }).then((querySnapshot) => {
+                    assert.equal(querySnapshot.size, 1);
+                    assert.equal(querySnapshot.docs[0].data()['uri'], 'dummy_uri');
+                    sinon.restore();
+                    resolve();
+                    return;
+                }).catch((e) => reject(e));
             } catch (e) {
                 reject(e);
             }
