@@ -1,3 +1,5 @@
+import 'dart:html';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -12,10 +14,46 @@ class MyHomePage extends StatefulWidget {
   MyHomePage({Key key, this.title}) : super(key: key);
 
   final String title;
-  final String tagPrefix = 'label:';
 
   @override
   _MyHomePageState createState() => _MyHomePageState();
+}
+
+class _MyHomePageState extends State<MyHomePage> {
+  int _currentIndex = 0;
+  final _pageWidgets = [
+    SavedPage(title: 'saved page'),
+    SavedPage(title: 'saved page 2'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: _pageWidgets.elementAt(_currentIndex),
+      bottomNavigationBar: BottomNavigationBar(
+        items: <BottomNavigationBarItem>[
+          BottomNavigationBarItem(icon: Icon(Icons.bookmark), label: 'Saved'),
+          BottomNavigationBarItem(icon: Icon(Icons.feed), label: 'Saved 2'),
+        ],
+        currentIndex: _currentIndex,
+        fixedColor: Colors.blueAccent,
+        onTap: _onItemTapped,
+        type: BottomNavigationBarType.fixed,
+      ),
+    );
+  }
+
+  void _onItemTapped(int index) => setState(() => _currentIndex = index);
+}
+
+class SavedPage extends StatefulWidget {
+  SavedPage({Key key, this.title}) : super(key: key);
+
+  final String title;
+  final String tagPrefix = 'label:';
+
+  @override
+  _SavedPageState createState() => _SavedPageState();
 }
 
 enum ArticleTypes {
@@ -24,7 +62,7 @@ enum ArticleTypes {
   TEXT,
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _SavedPageState extends State<SavedPage> {
   List<String> _queryTerms = [];
   List<String> _queryTags = ['__all__'];
 
