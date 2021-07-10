@@ -1,5 +1,3 @@
-import 'dart:html';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -9,6 +7,7 @@ import 'package:myapp/services/firebase_auth_service.dart';
 import 'package:myapp/widgets/nav_drawer.dart';
 import 'package:myapp/widgets/item_list.dart';
 import 'package:myapp/widgets/item_editor.dart';
+import 'package:myapp/widgets/rss.dart';
 
 class MyHomePage extends StatefulWidget {
   MyHomePage({Key key, this.title}) : super(key: key);
@@ -22,8 +21,8 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   int _currentIndex = 0;
   final _pageWidgets = [
-    SavedPage(title: 'saved page'),
-    SavedPage(title: 'saved page 2'),
+    SavedPage(title: 'Saved page'),
+    RssListPage(title: 'News feed page'),
   ];
 
   @override
@@ -33,7 +32,7 @@ class _MyHomePageState extends State<MyHomePage> {
       bottomNavigationBar: BottomNavigationBar(
         items: <BottomNavigationBarItem>[
           BottomNavigationBarItem(icon: Icon(Icons.bookmark), label: 'Saved'),
-          BottomNavigationBarItem(icon: Icon(Icons.feed), label: 'Saved 2'),
+          BottomNavigationBarItem(icon: Icon(Icons.feed), label: 'News Feed'),
         ],
         currentIndex: _currentIndex,
         fixedColor: Colors.blueAccent,
