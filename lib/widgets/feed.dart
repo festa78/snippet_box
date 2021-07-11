@@ -182,12 +182,7 @@ class _FeedListPageState extends State<FeedListPage> {
       appBar: AppBar(
         title: Text(this.title),
       ),
-      body: Center(
-        child: ListView(
-          padding: EdgeInsets.all(10.0),
-          children: _items,
-        ),
-      ),
+      body: FeedList(),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           _saveUrlToFirestore(context);
@@ -195,6 +190,50 @@ class _FeedListPageState extends State<FeedListPage> {
         child: Icon(Icons.add),
         backgroundColor: Colors.blue,
       ),
+    );
+  }
+}
+
+class FeedList extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final userData = Provider.of<MyUser>(context);
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('user_data')
+          .doc(userData.uid)
+          .collection('feeds')
+          .snapshots(),
+      builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+        if (snapshot.hasError) {
+          print(snapshot.error);
+          return new Text('Error: ${snapshot.error}');
+        }
+        switch (snapshot.connectionState) {
+          case ConnectionState.waiting:
+            return new Text('Loading...');
+          default:
+            return new ListView(
+              shrinkWrap: true,
+              children:
+                  snapshot.data.docs.map((DocumentSnapshot document) async {
+                var res = await get(Uri.parse(document['uri']));
+                FeedTypes feedType = getFeedType(res.body);
+                switch (feedType) {
+                  case FeedTypes.RSS:
+                    return RssFeedItems(res.body).getItems();
+                    break;
+                  case FeedTypes.ATOM:
+                    return AtomFeedItems(res.body).getItems();
+                    break;
+                  default:
+                    throw 'Unsupported feed type $feedType';
+                }
+              }).toList(),
+            );
+        }
+      },
     );
   }
 }
