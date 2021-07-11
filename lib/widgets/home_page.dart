@@ -7,7 +7,7 @@ import 'package:myapp/services/firebase_auth_service.dart';
 import 'package:myapp/widgets/nav_drawer.dart';
 import 'package:myapp/widgets/item_list.dart';
 import 'package:myapp/widgets/item_editor.dart';
-import 'package:myapp/widgets/rss.dart';
+import 'package:myapp/widgets/feed.dart';
 
 class MyHomePage extends StatefulWidget {
   MyHomePage({Key key, this.title}) : super(key: key);
@@ -22,7 +22,7 @@ class _MyHomePageState extends State<MyHomePage> {
   int _currentIndex = 0;
   final _pageWidgets = [
     SavedPage(title: 'Saved page'),
-    RssListPage(title: 'News feed page'),
+    FeedListPage(title: 'News feed page'),
   ];
 
   @override
