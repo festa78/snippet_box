@@ -38,7 +38,7 @@ abstract class FeedItems {
   }
 
   parse(String xmlString);
-  List<Widget> getItems();
+  ListView getItems();
 }
 
 class RssFeedItems extends FeedItems {
@@ -52,18 +52,18 @@ class RssFeedItems extends FeedItems {
   }
 
   @override
-  List<Widget> getItems() {
-    List<Widget> list = [];
-    for (RssItem item in _rssFeeds.items) {
-      list.add(ListTile(
-        contentPadding: EdgeInsets.all(10.0),
-        title: Text(
-          utf8.decode(item.title.runes.toList()),
-        ),
-      ));
-    }
-
-    return list;
+  ListView getItems() {
+    return ListView(
+      shrinkWrap: true,
+      children: _rssFeeds.items.map((item) {
+        return ListTile(
+          contentPadding: EdgeInsets.all(10.0),
+          title: Text(
+            utf8.decode(item.title.runes.toList()),
+          ),
+        );
+      }).toList(),
+    );
   }
 }
 
@@ -78,18 +78,18 @@ class AtomFeedItems extends FeedItems {
   }
 
   @override
-  List<Widget> getItems() {
-    List<Widget> list = [];
-    for (AtomItem item in _atomFeeds.items) {
-      list.add(ListTile(
-        contentPadding: EdgeInsets.all(10.0),
-        title: Text(
-          utf8.decode(item.title.runes.toList()),
-        ),
-      ));
-    }
-
-    return list;
+  ListView getItems() {
+    return ListView(
+      shrinkWrap: true,
+      children: _atomFeeds.items.map((item) {
+        return ListTile(
+          contentPadding: EdgeInsets.all(10.0),
+          title: Text(
+            utf8.decode(item.title.runes.toList()),
+          ),
+        );
+      }).toList(),
+    );
   }
 }
 
@@ -149,14 +149,14 @@ class FeedListPage extends StatefulWidget {
 class _FeedListPageState extends State<FeedListPage> {
   final String _feedUrl = "https://future-architect.github.io/atom.xml";
   final String title;
-  List<Widget> _items = [];
+  ListView _items = ListView();
 
   _FeedListPageState({@required this.title}) {
     convertItemFromXML();
   }
 
   void convertItemFromXML() async {
-    List<Widget> list = [];
+    ListView list = ListView();
 
     Response res = await get(Uri.parse(_feedUrl));
     FeedTypes feedType = getFeedType(res.body);
@@ -216,20 +216,36 @@ class FeedList extends StatelessWidget {
           default:
             return new ListView(
               shrinkWrap: true,
-              children:
-                  snapshot.data.docs.map((DocumentSnapshot document) async {
-                var res = await get(Uri.parse(document['uri']));
-                FeedTypes feedType = getFeedType(res.body);
-                switch (feedType) {
-                  case FeedTypes.RSS:
-                    return RssFeedItems(res.body).getItems();
-                    break;
-                  case FeedTypes.ATOM:
-                    return AtomFeedItems(res.body).getItems();
-                    break;
-                  default:
-                    throw 'Unsupported feed type $feedType';
-                }
+              children: snapshot.data.docs.map((DocumentSnapshot document) {
+                return get(Uri.parse(document['uri'])).then((Response res) {
+                  FeedTypes feedType = getFeedType(res.body);
+                  switch (feedType) {
+                    case FeedTypes.RSS:
+                      return RssFeedItems(res.body).getItems();
+                      break;
+                    case FeedTypes.ATOM:
+                      return AtomFeedItems(res.body).getItems();
+                      break;
+                    default:
+                      throw 'Unsupported feed type $feedType';
+                  }
+                });
+              }).map((listView) {
+                return FutureBuilder<ListView>(
+                    future: listView,
+                    builder: (BuildContext context,
+                        AsyncSnapshot<ListView> snapshot) {
+                      if (snapshot.hasError) {
+                        print(snapshot.error);
+                        return new Text('Error: ${snapshot.error}');
+                      }
+                      switch (snapshot.connectionState) {
+                        case ConnectionState.waiting:
+                          return new Text('Loading...');
+                        default:
+                          return snapshot.data;
+                      }
+                    });
               }).toList(),
             );
         }
