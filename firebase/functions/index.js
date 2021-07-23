@@ -328,22 +328,10 @@ async function getFirebaseUser(req, res, next) {
   }
 }
 
-// This complex HTTP function will be created as an ExpressJS app:
-// https://expressjs.com/en/4x/api.html
-const app = require('express')();
-
-// We'll enable CORS support to allow the function to be invoked
-// from our app client-side.
-app.use(require('cors')({origin: true}));
-
-// Then we'll also use a special 'getFirebaseUser' middleware which
-// verifies the Authorization header and adds a `user` field to the
-// incoming request:
-// https://gist.github.com/abeisgoat/832d6f8665454d0cd99ef08c229afb42
-app.use(getFirebaseUser);
-
-// Add a route handler to the app to generate the secured key
-app.get('/', (req, res) => {
+const getSearchKey = require('express')();
+getSearchKey.use(require('cors')({origin: true}));
+getSearchKey.use(getFirebaseUser);
+getSearchKey.get('/', (req, res) => {
   // @ts-ignore
   const uid = req.user.uid;
 
@@ -363,10 +351,21 @@ app.get('/', (req, res) => {
   const client = algoliasearch(ALGOLIA_ID, ALGOLIA_ADMIN_KEY);
   const key = client.generateSecuredApiKey(ALGOLIA_SEARCH_KEY, params);
 
-  // Then return this key as {key: '...key'}
   res.json({key});
 });
+exports.getSearchKey = functions.https.onRequest(getSearchKey);
 
-// Finally, pass our ExpressJS app to Cloud Functions as a function
-// called 'getSearchKey';
-exports.getSearchKey = functions.https.onRequest(app);
+exports.getRssContent = functions.https.onCall(async (data, context) => {
+  console.log('data in', data);
+  console.log('context in', context);
+  if (!context.auth) {
+    throw new functions.https.HttpsError('permission-denied', 'Auth Error');
+  }
+
+  xmlData = await fetch(data)
+    .then(response => {
+      return response.text();
+    })
+    .catch((error) => { throw new functions.https.HttpsError(error) });
+  return xmlData;
+});

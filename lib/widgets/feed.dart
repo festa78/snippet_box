@@ -2,9 +2,9 @@ import 'dart:convert' show utf8;
 
 import 'package:flutter/material.dart';
 import 'package:webfeed/webfeed.dart';
-import 'package:http/http.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 
 import 'package:myapp/models/user.dart';
 
@@ -13,6 +13,9 @@ enum FeedTypes {
   RSS,
   UNKNOWN,
 }
+
+HttpsCallable getRssContent =
+    FirebaseFunctions.instance.httpsCallable('getRssContent');
 
 FeedTypes getFeedType(String xmlString) {
   try {
@@ -59,7 +62,7 @@ class RssFeedItems extends FeedItems {
         return ListTile(
           contentPadding: EdgeInsets.all(10.0),
           title: Text(
-            utf8.decode(item.title.runes.toList()),
+            item.title,
           ),
         );
       }).toList(),
@@ -85,7 +88,7 @@ class AtomFeedItems extends FeedItems {
         return ListTile(
           contentPadding: EdgeInsets.all(10.0),
           title: Text(
-            utf8.decode(item.title.runes.toList()),
+            item.title,
           ),
         );
       }).toList(),
@@ -111,9 +114,8 @@ _saveUrlToFirestore(BuildContext context) {
               onPressed: () async {
                 print('Add new feed ${contentController.text}');
                 final userData = Provider.of<MyUser>(context, listen: false);
-                final Response res =
-                    await get(Uri.parse(contentController.text));
-                final FeedTypes feedType = getFeedType(res.body);
+                final res = await getRssContent(contentController.text);
+                final FeedTypes feedType = getFeedType(res.data);
                 await FirebaseFirestore.instance
                     .collection('user_data')
                     .doc(userData.uid)
@@ -158,14 +160,14 @@ class _FeedListPageState extends State<FeedListPage> {
   void convertItemFromXML() async {
     ListView list = ListView();
 
-    Response res = await get(Uri.parse(_feedUrl));
-    FeedTypes feedType = getFeedType(res.body);
+    final res = await getRssContent(_feedUrl);
+    FeedTypes feedType = getFeedType(res.data);
     switch (feedType) {
       case FeedTypes.RSS:
-        list = RssFeedItems(res.body).getItems();
+        list = RssFeedItems(res.data).getItems();
         break;
       case FeedTypes.ATOM:
-        list = AtomFeedItems(res.body).getItems();
+        list = AtomFeedItems(res.data).getItems();
         break;
       default:
         throw 'Unsupported feed type $feedType';
@@ -217,14 +219,15 @@ class FeedList extends StatelessWidget {
             return new ListView(
               shrinkWrap: true,
               children: snapshot.data.docs.map((DocumentSnapshot document) {
-                return get(Uri.parse(document['uri'])).then((Response res) {
-                  FeedTypes feedType = getFeedType(res.body);
+                return getRssContent(document['uri']).then((res) {
+                  final xmlData = res.data.toString();
+                  FeedTypes feedType = getFeedType(xmlData);
                   switch (feedType) {
                     case FeedTypes.RSS:
-                      return RssFeedItems(res.body).getItems();
+                      return RssFeedItems(xmlData).getItems();
                       break;
                     case FeedTypes.ATOM:
-                      return AtomFeedItems(res.body).getItems();
+                      return AtomFeedItems(xmlData).getItems();
                       break;
                     default:
                       throw 'Unsupported feed type $feedType';
