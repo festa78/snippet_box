@@ -355,17 +355,14 @@ getSearchKey.get('/', (req, res) => {
 });
 exports.getSearchKey = functions.https.onRequest(getSearchKey);
 
-exports.getRssContent = functions.https.onCall(async (data, context) => {
-  console.log('data in', data);
-  console.log('context in', context);
+exports.getRssContent = functions.https.onCall((data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError('permission-denied', 'Auth Error');
   }
 
-  xmlData = await fetch(data)
+  return fetch(data)
     .then(response => {
       return response.text();
     })
     .catch((error) => { throw new functions.https.HttpsError(error) });
-  return xmlData;
 });

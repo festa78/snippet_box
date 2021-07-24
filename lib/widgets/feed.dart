@@ -1,5 +1,3 @@
-import 'dart:convert' show utf8;
-
 import 'package:flutter/material.dart';
 import 'package:webfeed/webfeed.dart';
 import 'package:provider/provider.dart';
@@ -35,13 +33,20 @@ FeedTypes getFeedType(String xmlString) {
   throw 'Given XML string is not ATOM nor XML';
 }
 
+class FeedItemAndTime<T> {
+  final DateTime dateTime;
+  final T item;
+
+  FeedItemAndTime(this.dateTime, this.item);
+}
+
 abstract class FeedItems {
   FeedItems(String xmlString) {
     parse(xmlString);
   }
 
   parse(String xmlString);
-  ListView getItems();
+  List<FeedItemAndTime> getItems();
 }
 
 class RssFeedItems extends FeedItems {
@@ -55,18 +60,11 @@ class RssFeedItems extends FeedItems {
   }
 
   @override
-  ListView getItems() {
-    return ListView(
-      shrinkWrap: true,
-      children: _rssFeeds.items.map((item) {
-        return ListTile(
-          contentPadding: EdgeInsets.all(10.0),
-          title: Text(
-            item.title,
-          ),
-        );
-      }).toList(),
-    );
+  List<FeedItemAndTime<RssItem>> getItems() {
+    return _rssFeeds.items
+        .map((RssItem rssItem) =>
+            FeedItemAndTime<RssItem>(rssItem.pubDate, rssItem))
+        .toList();
   }
 }
 
@@ -81,18 +79,11 @@ class AtomFeedItems extends FeedItems {
   }
 
   @override
-  ListView getItems() {
-    return ListView(
-      shrinkWrap: true,
-      children: _atomFeeds.items.map((item) {
-        return ListTile(
-          contentPadding: EdgeInsets.all(10.0),
-          title: Text(
-            item.title,
-          ),
-        );
-      }).toList(),
-    );
+  List<FeedItemAndTime<AtomItem>> getItems() {
+    return _atomFeeds.items
+        .map((AtomItem atomItem) =>
+            FeedItemAndTime<AtomItem>(atomItem.updated, atomItem))
+        .toList();
   }
 }
 
@@ -139,44 +130,10 @@ _saveUrlToFirestore(BuildContext context) {
       });
 }
 
-class FeedListPage extends StatefulWidget {
+class FeedListPage extends StatelessWidget {
   final String title;
 
   FeedListPage({@required this.title});
-
-  @override
-  _FeedListPageState createState() => _FeedListPageState(title: title);
-}
-
-class _FeedListPageState extends State<FeedListPage> {
-  final String _feedUrl = "https://future-architect.github.io/atom.xml";
-  final String title;
-  ListView _items = ListView();
-
-  _FeedListPageState({@required this.title}) {
-    convertItemFromXML();
-  }
-
-  void convertItemFromXML() async {
-    ListView list = ListView();
-
-    final res = await getRssContent(_feedUrl);
-    FeedTypes feedType = getFeedType(res.data);
-    switch (feedType) {
-      case FeedTypes.RSS:
-        list = RssFeedItems(res.data).getItems();
-        break;
-      case FeedTypes.ATOM:
-        list = AtomFeedItems(res.data).getItems();
-        break;
-      default:
-        throw 'Unsupported feed type $feedType';
-    }
-
-    setState(() {
-      _items = list;
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -202,23 +159,22 @@ class FeedList extends StatelessWidget {
     final userData = Provider.of<MyUser>(context);
 
     return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('user_data')
-          .doc(userData.uid)
-          .collection('feeds')
-          .snapshots(),
-      builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
-        if (snapshot.hasError) {
-          print(snapshot.error);
-          return new Text('Error: ${snapshot.error}');
-        }
-        switch (snapshot.connectionState) {
-          case ConnectionState.waiting:
-            return new Text('Loading...');
-          default:
-            return new ListView(
-              shrinkWrap: true,
-              children: snapshot.data.docs.map((DocumentSnapshot document) {
+        stream: FirebaseFirestore.instance
+            .collection('user_data')
+            .doc(userData.uid)
+            .collection('feeds')
+            .snapshots(),
+        builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+          if (snapshot.hasError) {
+            print(snapshot.error);
+            return new Text('Error: ${snapshot.error}');
+          }
+          switch (snapshot.connectionState) {
+            case ConnectionState.waiting:
+              return new Text('Loading...');
+            default:
+              List<Future<List<FeedItemAndTime>>> feedItemFutureList = [];
+              snapshot.data.docs.map((DocumentSnapshot document) {
                 return getRssContent(document['uri']).then((res) {
                   final xmlData = res.data.toString();
                   FeedTypes feedType = getFeedType(xmlData);
@@ -233,27 +189,46 @@ class FeedList extends StatelessWidget {
                       throw 'Unsupported feed type $feedType';
                   }
                 });
-              }).map((listView) {
-                return FutureBuilder<ListView>(
-                    future: listView,
-                    builder: (BuildContext context,
-                        AsyncSnapshot<ListView> snapshot) {
-                      if (snapshot.hasError) {
-                        print(snapshot.error);
-                        return new Text('Error: ${snapshot.error}');
-                      }
-                      switch (snapshot.connectionState) {
-                        case ConnectionState.waiting:
-                          return new Text('Loading...');
-                        default:
-                          return snapshot.data;
-                      }
-                    });
-              }).toList(),
-            );
-        }
-      },
-    );
+              }).forEach((Future<List<FeedItemAndTime>> futureListItem) {
+                feedItemFutureList.add(futureListItem);
+              });
+
+              Future<List<List<FeedItemAndTime>>> feedItemListFuture =
+                  Future.wait(feedItemFutureList);
+              return FutureBuilder<List<List<FeedItemAndTime>>>(
+                  future: feedItemListFuture,
+                  builder: (BuildContext context,
+                      AsyncSnapshot<List<List<FeedItemAndTime>>> snapshot) {
+                    if (snapshot.hasError) {
+                      print(snapshot.error);
+                      return new Text('Error: ${snapshot.error}');
+                    }
+                    switch (snapshot.connectionState) {
+                      case ConnectionState.waiting:
+                        return Text('Loading');
+                      default:
+                        List feedItemAndTimes =
+                            snapshot.data.expand((x) => x).toList();
+                        feedItemAndTimes
+                            .sort((a, b) => b.dateTime.compareTo(a.dateTime));
+                        return ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: feedItemAndTimes.length,
+                          itemBuilder: (context, index) {
+                            return ListTile(
+                              contentPadding: EdgeInsets.all(10.0),
+                              title: Text(
+                                feedItemAndTimes[index].item.title,
+                              ),
+                              subtitle: Text(
+                                  feedItemAndTimes[index].dateTime.toString()),
+                            );
+                          },
+                        );
+                    }
+                  });
+          }
+        });
   }
 }
 
