@@ -1,3 +1,4 @@
+import 'package:easy_web_view/easy_web_view.dart';
 import 'package:flutter/material.dart';
 import 'package:webfeed/webfeed.dart';
 import 'package:provider/provider.dart';
@@ -39,12 +40,14 @@ class FeedItemAndTime<T> {
   final T item;
 
   DateTime dateTime;
+  String title;
   String uri;
 
   FeedItemAndTime(this.item) {
     if (T == AtomItem) {
       final atomItem = this.item as AtomItem;
       this.dateTime = atomItem.updated;
+      this.title = atomItem.title;
       this.uri = atomItem.links[0].href;
       if (atomItem.links.length != 1) {
         throw 'atomItem.links.lenght is not 1 but ${atomItem.links.length}';
@@ -52,6 +55,7 @@ class FeedItemAndTime<T> {
     } else if (T == RssItem) {
       final rssItem = this.item as RssItem;
       this.dateTime = rssItem.pubDate;
+      this.title = rssItem.title;
       this.uri = rssItem.link;
     } else {
       throw 'Given item is neither Atom nor Rss feed';
@@ -171,6 +175,21 @@ class FeedListPage extends StatelessWidget {
 }
 
 class FeedList extends StatelessWidget {
+  _navigate(BuildContext context, FeedItemAndTime itemAndTime) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) {
+        return Scaffold(
+          appBar: AppBar(title: Text(itemAndTime.title)),
+          body: EasyWebView(
+            src: itemAndTime.uri,
+            onLoaded: () => print('loaded uri ${itemAndTime.uri}'),
+          ),
+        );
+      }),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final userData = Provider.of<MyUser>(context);
@@ -232,13 +251,18 @@ class FeedList extends StatelessWidget {
                           shrinkWrap: true,
                           itemCount: feedItemAndTimes.length,
                           itemBuilder: (context, index) {
-                            return ListTile(
-                              contentPadding: EdgeInsets.all(10.0),
-                              title: Text(
-                                feedItemAndTimes[index].item.title,
+                            return GestureDetector(
+                              onTap: () =>
+                                  _navigate(context, feedItemAndTimes[index]),
+                              child: ListTile(
+                                contentPadding: EdgeInsets.all(10.0),
+                                title: Text(
+                                  feedItemAndTimes[index].title,
+                                ),
+                                subtitle: Text(feedItemAndTimes[index]
+                                    .dateTime
+                                    .toString()),
                               ),
-                              subtitle: Text(
-                                  feedItemAndTimes[index].dateTime.toString()),
                             );
                           },
                         );
