@@ -6,6 +6,8 @@ import 'package:cloud_functions/cloud_functions.dart';
 
 import 'package:myapp/models/user.dart';
 
+import 'dart:convert';
+
 enum FeedTypes {
   ATOM,
   RSS,
@@ -34,10 +36,27 @@ FeedTypes getFeedType(String xmlString) {
 }
 
 class FeedItemAndTime<T> {
-  final DateTime dateTime;
   final T item;
 
-  FeedItemAndTime(this.dateTime, this.item);
+  DateTime dateTime;
+  String uri;
+
+  FeedItemAndTime(this.item) {
+    if (T == AtomItem) {
+      final atomItem = this.item as AtomItem;
+      this.dateTime = atomItem.updated;
+      this.uri = atomItem.links[0].href;
+      if (atomItem.links.length != 1) {
+        throw 'atomItem.links.lenght is not 1 but ${atomItem.links.length}';
+      }
+    } else if (T == RssItem) {
+      final rssItem = this.item as RssItem;
+      this.dateTime = rssItem.pubDate;
+      this.uri = rssItem.link;
+    } else {
+      throw 'Given item is neither Atom nor Rss feed';
+    }
+  }
 }
 
 abstract class FeedItems {
@@ -62,8 +81,7 @@ class RssFeedItems extends FeedItems {
   @override
   List<FeedItemAndTime<RssItem>> getItems() {
     return _rssFeeds.items
-        .map((RssItem rssItem) =>
-            FeedItemAndTime<RssItem>(rssItem.pubDate, rssItem))
+        .map((RssItem rssItem) => FeedItemAndTime<RssItem>(rssItem))
         .toList();
   }
 }
@@ -81,8 +99,7 @@ class AtomFeedItems extends FeedItems {
   @override
   List<FeedItemAndTime<AtomItem>> getItems() {
     return _atomFeeds.items
-        .map((AtomItem atomItem) =>
-            FeedItemAndTime<AtomItem>(atomItem.updated, atomItem))
+        .map((AtomItem atomItem) => FeedItemAndTime<AtomItem>(atomItem))
         .toList();
   }
 }
