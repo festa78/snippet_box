@@ -192,54 +192,62 @@ class FeedList extends StatelessWidget {
             case ConnectionState.waiting:
               return new Text('Loading...');
             default:
-              List<Future<List<FeedItemAndTime>>> feedItemFutureList = [];
-              snapshot.data.docs.map((DocumentSnapshot document) {
-                return getRssContent(document['uri']).then((res) {
-                  final xmlData = res.data.toString();
-                  FeedTypes feedType = getFeedType(xmlData);
-                  switch (feedType) {
-                    case FeedTypes.RSS:
-                      return RssFeedItems(xmlData).getItems();
-                      break;
-                    case FeedTypes.ATOM:
-                      return AtomFeedItems(xmlData).getItems();
-                      break;
-                    default:
-                      throw 'Unsupported feed type $feedType';
-                  }
-                });
-              }).forEach((Future<List<FeedItemAndTime>> futureListItem) {
-                feedItemFutureList.add(futureListItem);
-              });
+              return SortedFeedList(querySnapshot: snapshot.data);
+          }
+        });
+  }
+}
 
-              Future<List<List<FeedItemAndTime>>> feedItemListFuture =
-                  Future.wait(feedItemFutureList);
-              return FutureBuilder<List<List<FeedItemAndTime>>>(
-                  future: feedItemListFuture,
-                  builder: (BuildContext context,
-                      AsyncSnapshot<List<List<FeedItemAndTime>>> snapshot) {
-                    if (snapshot.hasError) {
-                      print(snapshot.error);
-                      return new Text('Error: ${snapshot.error}');
-                    }
-                    switch (snapshot.connectionState) {
-                      case ConnectionState.waiting:
-                        return Text('Loading');
-                      default:
-                        List feedItemAndTimes =
-                            snapshot.data.expand((x) => x).toList();
-                        feedItemAndTimes
-                            .sort((a, b) => b.dateTime.compareTo(a.dateTime));
-                        return ListView.builder(
-                          shrinkWrap: true,
-                          itemCount: feedItemAndTimes.length,
-                          itemBuilder: (context, index) {
-                            return FeedListTile(
-                                feedItemAndTime: feedItemAndTimes[index]);
-                          },
-                        );
-                    }
-                  });
+class SortedFeedList extends StatelessWidget {
+  final QuerySnapshot querySnapshot;
+
+  SortedFeedList({@required this.querySnapshot});
+
+  @override
+  Widget build(BuildContext context) {
+    List<Future<List<FeedItemAndTime>>> feedItemFutureList = [];
+    this.querySnapshot.docs.map((DocumentSnapshot document) {
+      return getRssContent(document['uri']).then((res) {
+        final xmlData = res.data.toString();
+        FeedTypes feedType = getFeedType(xmlData);
+        switch (feedType) {
+          case FeedTypes.RSS:
+            return RssFeedItems(xmlData).getItems();
+            break;
+          case FeedTypes.ATOM:
+            return AtomFeedItems(xmlData).getItems();
+            break;
+          default:
+            throw 'Unsupported feed type $feedType';
+        }
+      });
+    }).forEach((Future<List<FeedItemAndTime>> futureListItem) {
+      feedItemFutureList.add(futureListItem);
+    });
+
+    Future<List<List<FeedItemAndTime>>> feedItemListFuture =
+        Future.wait(feedItemFutureList);
+    return FutureBuilder<List<List<FeedItemAndTime>>>(
+        future: feedItemListFuture,
+        builder: (BuildContext context,
+            AsyncSnapshot<List<List<FeedItemAndTime>>> snapshot) {
+          if (snapshot.hasError) {
+            print(snapshot.error);
+            return new Text('Error: ${snapshot.error}');
+          }
+          switch (snapshot.connectionState) {
+            case ConnectionState.waiting:
+              return Text('Loading');
+            default:
+              List feedItemAndTimes = snapshot.data.expand((x) => x).toList();
+              feedItemAndTimes.sort((a, b) => b.dateTime.compareTo(a.dateTime));
+              return ListView.builder(
+                shrinkWrap: true,
+                itemCount: feedItemAndTimes.length,
+                itemBuilder: (context, index) {
+                  return FeedListTile(feedItemAndTime: feedItemAndTimes[index]);
+                },
+              );
           }
         });
   }

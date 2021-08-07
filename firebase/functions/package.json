@@ -14,15 +14,15 @@
     "node": "14"
   },
   "dependencies": {
-    "algoliasearch": "^4.9.1",
+    "algoliasearch": "^4.10.3",
     "busboy": "^0.3.1",
     "chai": "^4.3.4",
-    "firebase": "^8.6.5",
-    "firebase-admin": "^9.9.0",
-    "firebase-functions": "^3.14.1",
-    "jsdom": "^16.6.0",
+    "firebase": "^8.9.1",
+    "firebase-admin": "^9.11.0",
+    "firebase-functions": "^3.15.3",
+    "jsdom": "^16.7.0",
     "node-fetch": "^2.6.1",
-    "sinon": "^11.1.1"
+    "sinon": "^11.1.2"
   },
   "devDependencies": {
     "eslint": "^5.12.0",

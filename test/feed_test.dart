@@ -26,7 +26,6 @@ void main() {
       final xmlDocument = XmlDocument.parse(atomXml);
       final atomItem = AtomItem.parse(xmlDocument.getElement('entry'));
       final feedItemAndTime = FeedItemAndTime(atomItem);
-      print(feedItemAndTime.uri);
 
       // Build our app and trigger a frame.
       final sut = MediaQuery(
@@ -61,7 +60,6 @@ void main() {
       final xmlDocument = XmlDocument.parse(rssXml);
       final rssItem = RssItem.parse(xmlDocument.getElement('item'));
       final feedItemAndTime = FeedItemAndTime(rssItem);
-      print(feedItemAndTime.uri);
 
       // Build our app and trigger a frame.
       final sut = MediaQuery(
