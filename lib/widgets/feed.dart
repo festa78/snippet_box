@@ -7,8 +7,6 @@ import 'package:cloud_functions/cloud_functions.dart';
 
 import 'package:myapp/models/user.dart';
 
-import 'dart:convert';
-
 enum FeedTypes {
   ATOM,
   RSS,
@@ -50,7 +48,7 @@ class FeedItemAndTime<T> {
       this.title = atomItem.title;
       this.uri = atomItem.links[0].href;
       if (atomItem.links.length != 1) {
-        throw 'atomItem.links.lenght is not 1 but ${atomItem.links.length}';
+        throw 'atomItem.links.length is not 1 but ${atomItem.links.length}';
       }
     } else if (T == RssItem) {
       final rssItem = this.item as RssItem;
@@ -175,21 +173,6 @@ class FeedListPage extends StatelessWidget {
 }
 
 class FeedList extends StatelessWidget {
-  _navigate(BuildContext context, FeedItemAndTime itemAndTime) async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) {
-        return Scaffold(
-          appBar: AppBar(title: Text(itemAndTime.title)),
-          body: EasyWebView(
-            src: itemAndTime.uri,
-            onLoaded: () => print('loaded uri ${itemAndTime.uri}'),
-          ),
-        );
-      }),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final userData = Provider.of<MyUser>(context);
@@ -251,19 +234,8 @@ class FeedList extends StatelessWidget {
                           shrinkWrap: true,
                           itemCount: feedItemAndTimes.length,
                           itemBuilder: (context, index) {
-                            return GestureDetector(
-                              onTap: () =>
-                                  _navigate(context, feedItemAndTimes[index]),
-                              child: ListTile(
-                                contentPadding: EdgeInsets.all(10.0),
-                                title: Text(
-                                  feedItemAndTimes[index].title,
-                                ),
-                                subtitle: Text(feedItemAndTimes[index]
-                                    .dateTime
-                                    .toString()),
-                              ),
-                            );
+                            return FeedListTile(
+                                feedItemAndTime: feedItemAndTimes[index]);
                           },
                         );
                     }
@@ -273,27 +245,38 @@ class FeedList extends StatelessWidget {
   }
 }
 
-class ItemDetailPage extends StatefulWidget {
-  final AtomItem item;
+class FeedListTile extends StatelessWidget {
+  final FeedItemAndTime feedItemAndTime;
 
-  ItemDetailPage({@required this.item});
+  FeedListTile({@required this.feedItemAndTime});
 
-  @override
-  _ItemDetailPageState createState() => _ItemDetailPageState(item: item);
-}
-
-class _ItemDetailPageState extends State<ItemDetailPage> {
-  AtomItem item;
-
-  _ItemDetailPageState({@required this.item});
+  _navigate(BuildContext context) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) {
+        return Scaffold(
+          appBar: AppBar(title: Text(this.feedItemAndTime.title)),
+          body: EasyWebView(
+            key: Key(this.feedItemAndTime.title),
+            src: this.feedItemAndTime.uri,
+            onLoaded: () => print('loaded uri ${this.feedItemAndTime.uri}'),
+          ),
+        );
+      }),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(item.title),
+    return GestureDetector(
+      onTap: () => _navigate(context),
+      child: ListTile(
+        contentPadding: EdgeInsets.all(10.0),
+        title: Text(
+          this.feedItemAndTime.title,
+        ),
+        subtitle: Text(this.feedItemAndTime.dateTime.toString()),
       ),
-      body: Center(child: Text(item.title)),
     );
   }
 }
