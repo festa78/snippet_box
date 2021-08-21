@@ -13,8 +13,8 @@ enum FeedTypes {
   UNKNOWN,
 }
 
-HttpsCallable getRssContent =
-    FirebaseFunctions.instance.httpsCallable('getRssContent');
+// HttpsCallable getRssContent =
+//     FirebaseFunctions.instance.httpsCallable('getRssContent');
 
 FeedTypes getFeedType(String xmlString) {
   try {
@@ -106,7 +106,8 @@ class AtomFeedItems extends FeedItems {
   }
 }
 
-_saveUrlToFirestore(BuildContext context) {
+_saveUrlToFirestore(
+    BuildContext context, Future<String> Function(String) getRssContent) {
   final contentController = TextEditingController();
 
   return showDialog(
@@ -125,7 +126,7 @@ _saveUrlToFirestore(BuildContext context) {
                 print('Add new feed ${contentController.text}');
                 final userData = Provider.of<MyUser>(context, listen: false);
                 final res = await getRssContent(contentController.text);
-                final FeedTypes feedType = getFeedType(res.data);
+                final FeedTypes feedType = getFeedType(res);
                 await FirebaseFirestore.instance
                     .collection('user_data')
                     .doc(userData.uid)
@@ -151,8 +152,9 @@ _saveUrlToFirestore(BuildContext context) {
 
 class FeedListPage extends StatelessWidget {
   final String title;
+  final Future<String> Function(String) getRssContent;
 
-  FeedListPage({@required this.title});
+  FeedListPage({@required this.title, @required this.getRssContent});
 
   @override
   Widget build(BuildContext context) {
@@ -163,7 +165,7 @@ class FeedListPage extends StatelessWidget {
       body: FeedList(),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          _saveUrlToFirestore(context);
+          _saveUrlToFirestore(context, this.getRssContent);
         },
         child: Icon(Icons.add),
         backgroundColor: Colors.blue,
@@ -192,7 +194,16 @@ class FeedList extends StatelessWidget {
             case ConnectionState.waiting:
               return new Text('Loading...');
             default:
-              return SortedFeedList(querySnapshot: snapshot.data);
+              return SortedFeedList(
+                querySnapshot: snapshot.data,
+                getRssContent: (String uri) {
+                  return FirebaseFunctions.instance
+                      .httpsCallable('getRssContent')(uri)
+                      .then((res) {
+                    return res.data.toString();
+                  });
+                },
+              );
           }
         });
   }
@@ -200,15 +211,15 @@ class FeedList extends StatelessWidget {
 
 class SortedFeedList extends StatelessWidget {
   final QuerySnapshot querySnapshot;
+  final Future<String> Function(String) getRssContent;
 
-  SortedFeedList({@required this.querySnapshot});
+  SortedFeedList({@required this.querySnapshot, @required this.getRssContent});
 
   @override
   Widget build(BuildContext context) {
     List<Future<List<FeedItemAndTime>>> feedItemFutureList = [];
     this.querySnapshot.docs.map((DocumentSnapshot document) {
-      return getRssContent(document['uri']).then((res) {
-        final xmlData = res.data.toString();
+      return this.getRssContent(document['uri']).then((xmlData) {
         FeedTypes feedType = getFeedType(xmlData);
         switch (feedType) {
           case FeedTypes.RSS:

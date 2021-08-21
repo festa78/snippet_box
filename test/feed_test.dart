@@ -5,6 +5,7 @@
 // gestures. You can also use WidgetTester to find child widgets in the widget
 // tree, read text, and verify that the values of widget properties are correct.
 
+import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:webfeed/webfeed.dart';
@@ -13,7 +14,7 @@ import 'package:xml/xml.dart';
 import 'package:myapp/widgets/feed.dart';
 
 void main() {
-  group('FeedListTile: initialization', () {
+  group('FeedListTile', () {
     testWidgets('atom feed', (WidgetTester tester) async {
       final String atomXml = '''<?xml version="1.0"?>
       <entry>
@@ -81,6 +82,48 @@ void main() {
 
       // Verify that it switches to EasyWebView.
       expect(find.byKey(Key('dummy_title')), findsNWidgets(2));
+    });
+  });
+
+  group('SortedFeedList', () {
+    testWidgets('check sorted', (WidgetTester tester) async {
+      final instance = FakeFirebaseFirestore();
+      await instance.collection('dummy').add({'uri': 'dummy_url'});
+      final snapshot = await instance.collection('dummy').get();
+
+      final String rssXml = '''<?xml version="1.0"?>
+      <feed xmlns="http://www.w3.org/2005/Atom">
+        <entry>
+          <id>dummy_id</id>
+          <title>dummy_title</title>
+          <updated>2021-08-06T02:41:16.782Z</updated>
+          <link href="https://example.com/" />
+        </entry>
+      </feed>''';
+
+      final sut = MediaQuery(
+        data: MediaQueryData(),
+        child: MaterialApp(
+          home: Scaffold(
+            body: SortedFeedList(
+              querySnapshot: snapshot,
+              getRssContent: (String uri) {
+                return Future<String>.value(rssXml);
+              },
+            ),
+          ),
+        ),
+      );
+      await tester.pumpWidget(sut);
+
+      // Verify it shows "Loading" at first while loading.
+      expect(find.text('Loading'), findsOneWidget);
+
+      // Wait enough so that it shows the actual feed content.
+      await tester.pumpAndSettle();
+
+      // Verify it shows feed title properly.
+      expect(find.text('dummy_title'), findsOneWidget);
     });
   });
 }
