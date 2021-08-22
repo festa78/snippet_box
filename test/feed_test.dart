@@ -8,10 +8,27 @@
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
+import 'package:mockito/mockito.dart';
 import 'package:webfeed/webfeed.dart';
 import 'package:xml/xml.dart';
 
+import 'package:myapp/models/user.dart';
 import 'package:myapp/widgets/feed.dart';
+
+class FakeRssUrlParser extends Fake implements RssUrlParser {
+  List<String> returnValues;
+  int index = 0;
+
+  FakeRssUrlParser({@required this.returnValues});
+
+  @override
+  Future<String> parse(String uri) {
+    final returnValue = this.returnValues[this.index];
+    this.index += 1;
+    return Future.value(returnValue);
+  }
+}
 
 void main() {
   group('FeedListTile', () {
@@ -87,11 +104,11 @@ void main() {
 
   group('SortedFeedList', () {
     testWidgets('check sorted', (WidgetTester tester) async {
-      final instance = FakeFirebaseFirestore();
-      await instance.collection('dummy').add({'uri': 'dummy_url'});
-      final snapshot = await instance.collection('dummy').get();
+      // final instance = FakeFirebaseFirestore();
+      // await instance.collection('dummy').add({'uri': 'dummy_url'});
+      // final snapshot = await instance.collection('dummy').get();
 
-      final String rssXml = '''<?xml version="1.0"?>
+      final String atomXml = '''<?xml version="1.0"?>
       <feed xmlns="http://www.w3.org/2005/Atom">
         <entry>
           <id>dummy_id</id>
@@ -106,10 +123,7 @@ void main() {
         child: MaterialApp(
           home: Scaffold(
             body: SortedFeedList(
-              querySnapshot: snapshot,
-              getRssContent: (String uri) {
-                return Future<String>.value(rssXml);
-              },
+              xmlDataList: [Future<String>.value(atomXml)],
             ),
           ),
         ),
@@ -117,13 +131,76 @@ void main() {
       await tester.pumpWidget(sut);
 
       // Verify it shows "Loading" at first while loading.
-      expect(find.text('Loading'), findsOneWidget);
+      expect(find.text('Sorting contents'), findsOneWidget);
 
       // Wait enough so that it shows the actual feed content.
       await tester.pumpAndSettle();
 
       // Verify it shows feed title properly.
       expect(find.text('dummy_title'), findsOneWidget);
+    });
+  });
+
+  group('FeedList', () {
+    testWidgets('check feedlist', (WidgetTester tester) async {
+      final instance = FakeFirebaseFirestore();
+      await instance
+          .collection('user_data')
+          .doc('dummy_uid')
+          .collection('feeds')
+          .add({'uri': 'dummy_url1'});
+      await instance
+          .collection('user_data')
+          .doc('dummy_uid')
+          .collection('feeds')
+          .add({'uri': 'dummy_url2'});
+
+      final String atomXml1 = '''<?xml version="1.0"?>
+      <feed xmlns="http://www.w3.org/2005/Atom">
+        <entry>
+          <id>dummy_id</id>
+          <title>dummy_title1</title>
+          <updated>2021-08-06T02:41:16.782Z</updated>
+          <link href="https://example.com/" />
+        </entry>
+      </feed>''';
+
+      final String atomXml2 = '''<?xml version="1.0"?>
+      <feed xmlns="http://www.w3.org/2005/Atom">
+        <entry>
+          <id>dummy_id_2</id>
+          <title>dummy_title2</title>
+          <updated>2021-08-07T02:41:16.782Z</updated>
+          <link href="https://example.com/" />
+        </entry>
+      </feed>''';
+
+      final sut = MediaQuery(
+        data: MediaQueryData(),
+        child: MaterialApp(
+          home: Provider(
+            create: (_) => MyUser(uid: 'dummy_uid'),
+            child: Scaffold(
+              body: FeedList(
+                firestoreInstance: instance,
+                rssUrlParser:
+                    FakeRssUrlParser(returnValues: [atomXml1, atomXml2]),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpWidget(sut);
+
+      // Verify it shows "Loading" at first while loading.
+      expect(find.text('Loading contents'), findsOneWidget);
+
+      // Wait enough so that it shows the actual feed content.
+      await tester.pumpAndSettle();
+
+      // Verify it shows feed title properly.
+      expect(find.text('dummy_title1'), findsOneWidget);
+      expect(find.text('dummy_title2'), findsOneWidget);
     });
   });
 }

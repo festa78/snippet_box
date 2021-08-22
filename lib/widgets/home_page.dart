@@ -22,7 +22,10 @@ class _MyHomePageState extends State<MyHomePage> {
   int _currentIndex = 0;
   final _pageWidgets = [
     SavedPage(title: 'Saved page'),
-    FeedListPage(title: 'News feed page'),
+    FeedListPage(
+      title: 'News feed page',
+      rssUrlParser: RssUrlParser(),
+    ),
   ];
 
   @override
