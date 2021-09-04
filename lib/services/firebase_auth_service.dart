@@ -25,7 +25,6 @@ class FirebaseAuthService {
 
   Stream<MyUser> get onAuthStateChanged {
     return _firebaseAuth.authStateChanges().map(_userFromFirebase);
-    // return _firebaseAuth.onAuthStateChanged.map(_userFromFirebase);
   }
 
   Future<MyUser> signInAnonymously() async {
@@ -40,10 +39,6 @@ class FirebaseAuthService {
       accessToken: googleAuth.accessToken,
       idToken: googleAuth.idToken,
     );
-    // final credential = GoogleAuthProvider.getCredential(
-    //   accessToken: googleAuth.accessToken,
-    //   idToken: googleAuth.idToken,
-    // );
     final authResult = await _firebaseAuth.signInWithCredential(credential);
     return _userFromFirebase(authResult.user);
   }

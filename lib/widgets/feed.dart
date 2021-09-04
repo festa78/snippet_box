@@ -309,6 +309,21 @@ class FeedListTile extends StatelessWidget {
           this.feedItemAndTime.title,
         ),
         subtitle: Text(this.feedItemAndTime.dateTime.toString()),
+        trailing: Container(
+          width: 200,
+          child: ButtonBar(
+            children: [
+              IconButton(
+                icon: Icon(Icons.thumb_up),
+                onPressed: () => print('thumb up'),
+              ),
+              IconButton(
+                icon: Icon(Icons.thumb_down),
+                onPressed: () => print('thumb down'),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -39,6 +39,7 @@ dependencies:
   provider: any
   webfeed: ^0.7.0
   http: any
+  universal_html: ^1.2.1
 
 dev_dependencies:
   build_runner: any
