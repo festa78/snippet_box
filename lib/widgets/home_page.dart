@@ -48,6 +48,12 @@ class _MyHomePageState extends State<MyHomePage> {
   void _onItemTapped(int index) => setState(() => _currentIndex = index);
 }
 
+enum ArticleTypes {
+  URL,
+  PDF,
+  TEXT,
+}
+
 class SavedPage extends StatefulWidget {
   SavedPage({Key key, this.title}) : super(key: key);
 
@@ -56,12 +62,6 @@ class SavedPage extends StatefulWidget {
 
   @override
   _SavedPageState createState() => _SavedPageState();
-}
-
-enum ArticleTypes {
-  URL,
-  PDF,
-  TEXT,
 }
 
 class _SavedPageState extends State<SavedPage> {

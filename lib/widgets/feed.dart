@@ -6,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 
 import 'package:myapp/models/user.dart';
+import 'package:myapp/widgets/up_down_vote_buttons.dart';
 
 enum FeedTypes {
   ATOM,
@@ -311,18 +312,7 @@ class FeedListTile extends StatelessWidget {
         subtitle: Text(this.feedItemAndTime.dateTime.toString()),
         trailing: Container(
           width: 200,
-          child: ButtonBar(
-            children: [
-              IconButton(
-                icon: Icon(Icons.thumb_up),
-                onPressed: () => print('thumb up'),
-              ),
-              IconButton(
-                icon: Icon(Icons.thumb_down),
-                onPressed: () => print('thumb down'),
-              ),
-            ],
-          ),
+          child: UpDownVoteButtons(voteStateInit: 0),
         ),
       ),
     );
