@@ -20,6 +20,9 @@ service cloud.firestore {
     	match /feeds/{feed} {
         allow read, write: if request.auth != null && request.auth.uid == user_id;
       }
+    	match /votes/{vote} {
+        allow read, write: if request.auth != null && request.auth.uid == user_id;
+      }
     }
   }
 }

@@ -265,13 +265,101 @@ class SortedFeedList extends StatelessWidget {
             case ConnectionState.waiting:
               return Text('Sorting contents');
             default:
-              List feedItemAndTimes = snapshot.data.expand((x) => x).toList();
+              List<FeedItemAndTime> feedItemAndTimes =
+                  snapshot.data.expand((x) => x).toList();
               feedItemAndTimes.sort((a, b) => b.dateTime.compareTo(a.dateTime));
+              return SortedFeedListWithVote(
+                  feedItemAndTimes: feedItemAndTimes,
+                  firestoreInstance: FirebaseFirestore.instance);
+          }
+        });
+  }
+}
+
+class VotedUri {
+  // <0: negative, 0: not selected, >0: positive.
+  final int state;
+  final String uri;
+  final DateTime uriCreatedAt;
+  // expect null as we do not store a document when it is not voted for efficiency.
+  final String docId;
+
+  VotedUri({
+    @required this.uri,
+    @required this.state,
+    @required this.uriCreatedAt,
+    this.docId,
+  });
+}
+
+class SortedFeedListWithVote extends StatelessWidget {
+  final List<FeedItemAndTime> feedItemAndTimes;
+  final FirebaseFirestore firestoreInstance;
+
+  SortedFeedListWithVote(
+      {@required this.feedItemAndTimes, @required this.firestoreInstance});
+
+  @override
+  Widget build(BuildContext context) {
+    final userData = Provider.of<MyUser>(context);
+    final startDate =
+        this.feedItemAndTimes[this.feedItemAndTimes.length - 1].dateTime;
+    final endDate = this.feedItemAndTimes[0].dateTime;
+
+    return FutureBuilder<QuerySnapshot>(
+        future: this
+            .firestoreInstance
+            .collection('user_data')
+            .doc(userData.uid)
+            .collection('votes')
+            .where('uriCreatedAt', isGreaterThanOrEqualTo: startDate)
+            .where('uriCreatedAt', isLessThanOrEqualTo: endDate)
+            .get(),
+        builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+          if (snapshot.hasError) {
+            print(snapshot.error);
+            return new Text('Error: ${snapshot.error}');
+          }
+          switch (snapshot.connectionState) {
+            case ConnectionState.waiting:
+              return Text('Retrieving votes');
+            default:
+              List<VotedUri> votedUris =
+                  snapshot.data.docs.map((DocumentSnapshot document) {
+                return VotedUri(
+                    uri: document['uri'],
+                    state: document['state'],
+                    uriCreatedAt: document['uriCreatedAt'].toDate(),
+                    docId: document.id);
+              }).toList();
+
               return ListView.builder(
                 shrinkWrap: true,
-                itemCount: feedItemAndTimes.length,
+                itemCount: this.feedItemAndTimes.length,
                 itemBuilder: (context, index) {
-                  return FeedListTile(feedItemAndTime: feedItemAndTimes[index]);
+                  bool comparator(element) =>
+                      element.uri == this.feedItemAndTimes[index].uri &&
+                      element.uriCreatedAt ==
+                          this.feedItemAndTimes[index].dateTime;
+
+                  final votedUriIndex = votedUris.indexWhere(comparator);
+
+                  // Make sure no duplication.
+                  assert(votedUris.indexWhere(comparator, votedUriIndex + 1) ==
+                      -1);
+
+                  if (votedUriIndex == -1) {
+                    return FeedListTile(
+                      feedItemAndTime: this.feedItemAndTimes[index],
+                      initialVotedUri: VotedUri(
+                          uri: this.feedItemAndTimes[index].uri,
+                          state: 0,
+                          uriCreatedAt: this.feedItemAndTimes[index].dateTime),
+                    );
+                  }
+                  return FeedListTile(
+                      feedItemAndTime: this.feedItemAndTimes[index],
+                      initialVotedUri: votedUris[votedUriIndex]);
                 },
               );
           }
@@ -281,8 +369,10 @@ class SortedFeedList extends StatelessWidget {
 
 class FeedListTile extends StatelessWidget {
   final FeedItemAndTime feedItemAndTime;
+  final VotedUri initialVotedUri;
 
-  FeedListTile({@required this.feedItemAndTime});
+  FeedListTile(
+      {@required this.feedItemAndTime, @required this.initialVotedUri});
 
   _navigate(BuildContext context) async {
     await Navigator.push(
@@ -312,7 +402,7 @@ class FeedListTile extends StatelessWidget {
         subtitle: Text(this.feedItemAndTime.dateTime.toString()),
         trailing: Container(
           width: 200,
-          child: UpDownVoteButtons(voteStateInit: 0),
+          child: UpDownVoteButtons(initialVotedUri: this.initialVotedUri),
         ),
       ),
     );
