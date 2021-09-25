@@ -219,6 +219,7 @@ class FeedList extends StatelessWidget {
                     snapshot.data.docs.map((DocumentSnapshot document) {
                   return this.rssUrlParser.parse(document['uri']);
                 }).toList(),
+                firestoreInstance: this.firestoreInstance,
               );
           }
         });
@@ -227,8 +228,10 @@ class FeedList extends StatelessWidget {
 
 class SortedFeedList extends StatelessWidget {
   final List<Future<String>> xmlDataList;
+  final FirebaseFirestore firestoreInstance;
 
-  SortedFeedList({@required this.xmlDataList});
+  SortedFeedList(
+      {@required this.xmlDataList, @required this.firestoreInstance});
 
   @override
   Widget build(BuildContext context) {
@@ -270,7 +273,7 @@ class SortedFeedList extends StatelessWidget {
               feedItemAndTimes.sort((a, b) => b.dateTime.compareTo(a.dateTime));
               return SortedFeedListWithVote(
                   feedItemAndTimes: feedItemAndTimes,
-                  firestoreInstance: FirebaseFirestore.instance);
+                  firestoreInstance: this.firestoreInstance);
           }
         });
   }
@@ -304,7 +307,6 @@ class SortedFeedListWithVote extends StatelessWidget {
     final userData = Provider.of<MyUser>(context);
     final startDate =
         this.feedItemAndTimes[this.feedItemAndTimes.length - 1].dateTime;
-    final endDate = this.feedItemAndTimes[0].dateTime;
 
     return FutureBuilder<QuerySnapshot>(
         future: this
@@ -313,7 +315,6 @@ class SortedFeedListWithVote extends StatelessWidget {
             .doc(userData.uid)
             .collection('votes')
             .where('uriCreatedAt', isGreaterThanOrEqualTo: startDate)
-            .where('uriCreatedAt', isLessThanOrEqualTo: endDate)
             .get(),
         builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
           if (snapshot.hasError) {

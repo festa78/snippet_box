@@ -6,9 +6,10 @@ import 'package:myapp/models/user.dart';
 import 'package:myapp/widgets/feed.dart';
 
 class UpDownVoteButtons extends StatefulWidget {
+  final FirebaseFirestore firestoreInstance;
   final VotedUri initialVotedUri;
 
-  UpDownVoteButtons({this.initialVotedUri});
+  UpDownVoteButtons({@required this.firestoreInstance, this.initialVotedUri});
 
   @override
   UpDownVoteButtonsState createState() =>
@@ -30,7 +31,9 @@ class UpDownVoteButtonsState extends State<UpDownVoteButtons> {
           onPressed: () {
             final userData = Provider.of<MyUser>(context, listen: false);
 
-            final collectionRef = FirebaseFirestore.instance
+            final collectionRef = this
+                .widget
+                .firestoreInstance
                 .collection('user_data')
                 .doc(userData.uid)
                 .collection('votes');
@@ -53,11 +56,13 @@ class UpDownVoteButtonsState extends State<UpDownVoteButtons> {
               return;
             }
 
-            collectionRef.doc(this.votedUri.docId).delete().then((value) {
+            final newState = this.votedUri.state == 1 ? 0 : 1;
+            collectionRef.doc(this.votedUri.docId).update(
+                {'state': newState}).then((value) {
               setState(() {
                 this.votedUri = VotedUri(
                     uri: this.votedUri.uri,
-                    state: 0,
+                    state: newState,
                     uriCreatedAt: this.votedUri.uriCreatedAt);
               });
             }).catchError(
@@ -70,7 +75,9 @@ class UpDownVoteButtonsState extends State<UpDownVoteButtons> {
           onPressed: () {
             final userData = Provider.of<MyUser>(context, listen: false);
 
-            final collectionRef = FirebaseFirestore.instance
+            final collectionRef = this
+                .widget
+                .firestoreInstance
                 .collection('user_data')
                 .doc(userData.uid)
                 .collection('votes');
@@ -93,11 +100,13 @@ class UpDownVoteButtonsState extends State<UpDownVoteButtons> {
               return;
             }
 
-            collectionRef.doc(this.votedUri.docId).delete().then((value) {
+            final newState = this.votedUri.state == -1 ? 0 : -1;
+            collectionRef.doc(this.votedUri.docId).update(
+                {'state': newState}).then((value) {
               setState(() {
                 this.votedUri = VotedUri(
                     uri: this.votedUri.uri,
-                    state: 0,
+                    state: newState,
                     uriCreatedAt: this.votedUri.uriCreatedAt);
               });
             }).catchError(

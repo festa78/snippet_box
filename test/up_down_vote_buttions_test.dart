@@ -1,6 +1,11 @@
+import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
+
+import 'package:myapp/models/user.dart';
 import 'package:myapp/widgets/up_down_vote_buttons.dart';
+import 'package:myapp/widgets/feed.dart';
 
 void main() {
   Widget sut;
@@ -11,8 +16,15 @@ void main() {
       sut = MediaQuery(
         data: MediaQueryData(),
         child: MaterialApp(
-          home: Scaffold(
-            body: UpDownVoteButtons(voteStateInit: 0),
+          home: Provider(
+            create: (_) => MyUser(uid: 'dummy_uid'),
+            child: Scaffold(
+              body: UpDownVoteButtons(
+                initialVotedUri: VotedUri(
+                    uri: 'dummy_uri', state: 0, uriCreatedAt: DateTime.now()),
+                firestoreInstance: FakeFirebaseFirestore(),
+              ),
+            ),
           ),
         ),
       );
@@ -21,7 +33,7 @@ void main() {
     final verifier = (WidgetTester tester, int state) {
       final upDownVoteButtons =
           tester.state<UpDownVoteButtonsState>(find.byType(UpDownVoteButtons));
-      expect(upDownVoteButtons.voteState, equals(state));
+      expect(upDownVoteButtons.votedUri.state, equals(state));
       final upButton = tester
           .element(find.byIcon(Icons.thumb_up))
           .findAncestorWidgetOfExactType<IconButton>();

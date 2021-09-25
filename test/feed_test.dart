@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -8,6 +9,7 @@ import 'package:xml/xml.dart';
 
 import 'package:myapp/models/user.dart';
 import 'package:myapp/widgets/feed.dart';
+import 'package:myapp/widgets/up_down_vote_buttons.dart';
 
 class FakeRssUrlParser extends Fake implements RssUrlParser {
   List<String> returnValues;
@@ -37,13 +39,16 @@ void main() {
       final xmlDocument = XmlDocument.parse(atomXml);
       final atomItem = AtomItem.parse(xmlDocument.getElement('entry'));
       final feedItemAndTime = FeedItemAndTime(atomItem);
+      final votedUri =
+          VotedUri(uri: 'dummy_uri', state: 0, uriCreatedAt: DateTime.now());
 
       // Build our app and trigger a frame.
       final sut = MediaQuery(
         data: MediaQueryData(),
         child: MaterialApp(
           home: Scaffold(
-            body: FeedListTile(feedItemAndTime: feedItemAndTime),
+            body: FeedListTile(
+                feedItemAndTime: feedItemAndTime, initialVotedUri: votedUri),
           ),
         ),
       );
@@ -71,13 +76,16 @@ void main() {
       final xmlDocument = XmlDocument.parse(rssXml);
       final rssItem = RssItem.parse(xmlDocument.getElement('item'));
       final feedItemAndTime = FeedItemAndTime(rssItem);
+      final votedUri =
+          VotedUri(uri: 'dummy_uri', state: 0, uriCreatedAt: DateTime.now());
 
       // Build our app and trigger a frame.
       final sut = MediaQuery(
         data: MediaQueryData(),
         child: MaterialApp(
           home: Scaffold(
-            body: FeedListTile(feedItemAndTime: feedItemAndTime),
+            body: FeedListTile(
+                feedItemAndTime: feedItemAndTime, initialVotedUri: votedUri),
           ),
         ),
       );
@@ -93,14 +101,95 @@ void main() {
       // Verify that it switches to EasyWebView.
       expect(find.byKey(Key('dummy_title')), findsNWidgets(2));
     });
+
+    testWidgets('feed with votes', (WidgetTester tester) async {
+      final String rssXml = '''<?xml version="1.0"?>
+      <item>
+        <title>dummy_title</title>
+        <pubDate>2021-08-06T02:41:16.782Z</pubDate>
+        <link>"https://example.com/"</link>
+      </item>''';
+
+      final xmlDocument = XmlDocument.parse(rssXml);
+      final rssItem = RssItem.parse(xmlDocument.getElement('item'));
+      final feedItemAndTime = FeedItemAndTime(rssItem);
+      final votedUri =
+          VotedUri(uri: 'dummy_uri', state: 1, uriCreatedAt: DateTime.now());
+
+      // Build our app and trigger a frame.
+      final sut = MediaQuery(
+        data: MediaQueryData(),
+        child: MaterialApp(
+          home: Scaffold(
+            body: FeedListTile(
+                feedItemAndTime: feedItemAndTime, initialVotedUri: votedUri),
+          ),
+        ),
+      );
+      await tester.pumpWidget(sut);
+
+      // Verify it shows feed with thumb_up vote.
+      expect(find.byIcon(Icons.thumb_down), findsOneWidget);
+      final upDownVoteButtons =
+          tester.state<UpDownVoteButtonsState>(find.byType(UpDownVoteButtons));
+      expect(upDownVoteButtons.votedUri.state, equals(1));
+    });
+  });
+
+  group('SortedFeedListWithVote', () {
+    testWidgets('Detect vote data with uri and timestamp exact match',
+        (WidgetTester tester) async {
+      final dateTime = DateTime.now();
+      final instance = FakeFirebaseFirestore();
+      await instance
+          .collection('user_data')
+          .doc('dummy_uid')
+          .collection('votes')
+          .add({
+        'uri': 'https://example.com/',
+        'state': 1,
+        'uriCreatedAt': Timestamp.fromDate(dateTime),
+      });
+
+      final String atomXml = '''<?xml version="1.0"?>
+      <feed xmlns="http://www.w3.org/2005/Atom">
+        <entry>
+          <id>dummy_id</id>
+          <title>dummy_title</title>
+          <updated>${dateTime.toIso8601String()}</updated>
+          <link href="https://example.com/" />
+        </entry>
+      </feed>''';
+
+      final sut = MediaQuery(
+        data: MediaQueryData(),
+        child: MaterialApp(
+          home: Provider(
+            create: (_) => MyUser(uid: 'dummy_uid'),
+            child: Scaffold(
+              body: SortedFeedListWithVote(
+                feedItemAndTimes: AtomFeedItems(atomXml).getItems(),
+                firestoreInstance: instance,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpWidget(sut);
+
+      // Wait enough so that it shows the actual feed content.
+      await tester.pumpAndSettle();
+
+      // Verify it shows feed with thumb_up vote.
+      expect(find.byIcon(Icons.thumb_down), findsOneWidget);
+      final upDownVoteButtons =
+          tester.state<UpDownVoteButtonsState>(find.byType(UpDownVoteButtons));
+      expect(upDownVoteButtons.votedUri.state, equals(1));
+    });
   });
 
   group('SortedFeedList', () {
     testWidgets('check sorted', (WidgetTester tester) async {
-      // final instance = FakeFirebaseFirestore();
-      // await instance.collection('dummy').add({'uri': 'dummy_url'});
-      // final snapshot = await instance.collection('dummy').get();
-
       final String atomXml = '''<?xml version="1.0"?>
       <feed xmlns="http://www.w3.org/2005/Atom">
         <entry>
@@ -114,9 +203,13 @@ void main() {
       final sut = MediaQuery(
         data: MediaQueryData(),
         child: MaterialApp(
-          home: Scaffold(
-            body: SortedFeedList(
-              xmlDataList: [Future<String>.value(atomXml)],
+          home: Provider(
+            create: (_) => MyUser(uid: 'dummy_uid'),
+            child: Scaffold(
+              body: SortedFeedList(
+                xmlDataList: [Future<String>.value(atomXml)],
+                firestoreInstance: FakeFirebaseFirestore(),
+              ),
             ),
           ),
         ),
