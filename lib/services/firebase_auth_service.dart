@@ -11,11 +11,11 @@ class FirebaseAuthService {
       : _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance,
         _googleSignIn = googleSignin ?? GoogleSignIn();
 
-  MyUser _userFromFirebase(User user) {
+  SnippetBoxUser _userFromFirebase(User user) {
     if (user == null) {
       return null;
     }
-    return MyUser(
+    return SnippetBoxUser(
       uid: user.uid,
       email: user.email,
       displayName: user.displayName,
@@ -23,16 +23,16 @@ class FirebaseAuthService {
     );
   }
 
-  Stream<MyUser> get onAuthStateChanged {
+  Stream<SnippetBoxUser> get onAuthStateChanged {
     return _firebaseAuth.authStateChanges().map(_userFromFirebase);
   }
 
-  Future<MyUser> signInAnonymously() async {
+  Future<SnippetBoxUser> signInAnonymously() async {
     final authResult = await _firebaseAuth.signInAnonymously();
     return _userFromFirebase(authResult.user);
   }
 
-  Future<MyUser> signInWithGoogle() async {
+  Future<SnippetBoxUser> signInWithGoogle() async {
     final googleUser = await _googleSignIn.signIn();
     final googleAuth = await googleUser.authentication;
     final credential = GoogleAuthProvider.credential(
@@ -47,7 +47,7 @@ class FirebaseAuthService {
     return _firebaseAuth.signOut();
   }
 
-  Future<MyUser> currentUser() async {
+  Future<SnippetBoxUser> currentUser() async {
     final user = _firebaseAuth.currentUser;
     return _userFromFirebase(user);
   }

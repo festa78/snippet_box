@@ -4,8 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
 import 'package:myapp/models/user.dart';
+import 'package:myapp/models/feed.dart';
 import 'package:myapp/widgets/up_down_vote_buttons.dart';
-import 'package:myapp/widgets/feed.dart';
 
 void main() {
   Widget sut;
@@ -17,7 +17,7 @@ void main() {
         data: MediaQueryData(),
         child: MaterialApp(
           home: Provider(
-            create: (_) => MyUser(uid: 'dummy_uid'),
+            create: (_) => SnippetBoxUser(uid: 'dummy_uid'),
             child: Scaffold(
               body: UpDownVoteButtons(
                 initialVotedUri: VotedUri(

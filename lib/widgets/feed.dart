@@ -1,121 +1,11 @@
 import 'package:easy_web_view/easy_web_view.dart';
 import 'package:flutter/material.dart';
-import 'package:webfeed/webfeed.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cloud_functions/cloud_functions.dart';
 
+import 'package:myapp/models/feed.dart';
 import 'package:myapp/models/user.dart';
 import 'package:myapp/widgets/up_down_vote_buttons.dart';
-
-enum FeedTypes {
-  ATOM,
-  RSS,
-  UNKNOWN,
-}
-
-class RssUrlParser {
-  final HttpsCallable getRssContent =
-      FirebaseFunctions.instance.httpsCallable('getRssContent');
-
-  Future<String> parse(String uri) {
-    return this.getRssContent(uri).then((res) {
-      return res.data.toString();
-    }).catchError((error) {
-      throw error;
-    });
-  }
-}
-
-FeedTypes getFeedType(String xmlString) {
-  try {
-    RssFeed.parse(xmlString);
-    return FeedTypes.RSS;
-  } catch (e) {
-    print(e);
-  }
-
-  try {
-    AtomFeed.parse(xmlString);
-    return FeedTypes.ATOM;
-  } catch (e) {
-    print(e);
-  }
-
-  throw 'Given XML string is not ATOM nor XML';
-}
-
-class FeedItemAndTime<T> {
-  final T item;
-
-  DateTime dateTime;
-  String title;
-  String uri;
-
-  FeedItemAndTime(this.item) {
-    if (T == AtomItem) {
-      final atomItem = this.item as AtomItem;
-      this.dateTime = atomItem.updated;
-      this.title = atomItem.title;
-      this.uri = atomItem.links[0].href;
-      if (atomItem.links.length != 1) {
-        throw 'atomItem.links.length is not 1 but ${atomItem.links.length}';
-      }
-    } else if (T == RssItem) {
-      final rssItem = this.item as RssItem;
-      this.dateTime = rssItem.pubDate;
-      this.title = rssItem.title;
-      this.uri = rssItem.link;
-    } else {
-      throw 'Given item is neither Atom nor Rss feed';
-    }
-  }
-}
-
-abstract class FeedItems {
-  FeedItems(String xmlString) {
-    parse(xmlString);
-  }
-
-  parse(String xmlString);
-  List<FeedItemAndTime> getItems();
-}
-
-class RssFeedItems extends FeedItems {
-  RssFeed _rssFeeds;
-
-  RssFeedItems(String xmlString) : super(xmlString);
-
-  @override
-  parse(String xmlString) {
-    _rssFeeds = RssFeed.parse(xmlString);
-  }
-
-  @override
-  List<FeedItemAndTime<RssItem>> getItems() {
-    return _rssFeeds.items
-        .map((RssItem rssItem) => FeedItemAndTime<RssItem>(rssItem))
-        .toList();
-  }
-}
-
-class AtomFeedItems extends FeedItems {
-  AtomFeed _atomFeeds;
-
-  AtomFeedItems(String xmlString) : super(xmlString);
-
-  @override
-  parse(String xmlString) {
-    _atomFeeds = AtomFeed.parse(xmlString);
-  }
-
-  @override
-  List<FeedItemAndTime<AtomItem>> getItems() {
-    return _atomFeeds.items
-        .map((AtomItem atomItem) => FeedItemAndTime<AtomItem>(atomItem))
-        .toList();
-  }
-}
 
 class FeedListPage extends StatelessWidget {
   final String title;
@@ -140,7 +30,8 @@ class FeedListPage extends StatelessWidget {
                 child: new Text('Add'),
                 onPressed: () async {
                   print('Add new feed ${contentController.text}');
-                  final userData = Provider.of<MyUser>(context, listen: false);
+                  final userData =
+                      Provider.of<SnippetBoxUser>(context, listen: false);
                   final res =
                       await this.rssUrlParser.parse(contentController.text);
                   final FeedTypes feedType = getFeedType(res);
@@ -196,7 +87,7 @@ class FeedList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final userData = Provider.of<MyUser>(context);
+    final userData = Provider.of<SnippetBoxUser>(context);
 
     return StreamBuilder<QuerySnapshot>(
         stream: this
@@ -279,22 +170,6 @@ class SortedFeedList extends StatelessWidget {
   }
 }
 
-class VotedUri {
-  // <0: negative, 0: not selected, >0: positive.
-  final int state;
-  final String uri;
-  final DateTime uriCreatedAt;
-  // expect null as we do not store a document when it is not voted for efficiency.
-  final String docId;
-
-  VotedUri({
-    @required this.uri,
-    @required this.state,
-    @required this.uriCreatedAt,
-    this.docId,
-  });
-}
-
 class SortedFeedListWithVote extends StatelessWidget {
   final List<FeedItemAndTime> feedItemAndTimes;
   final FirebaseFirestore firestoreInstance;
@@ -304,7 +179,7 @@ class SortedFeedListWithVote extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final userData = Provider.of<MyUser>(context);
+    final userData = Provider.of<SnippetBoxUser>(context);
     final startDate =
         this.feedItemAndTimes[this.feedItemAndTimes.length - 1].dateTime;
 
@@ -356,11 +231,14 @@ class SortedFeedListWithVote extends StatelessWidget {
                           uri: this.feedItemAndTimes[index].uri,
                           state: 0,
                           uriCreatedAt: this.feedItemAndTimes[index].dateTime),
+                      firestoreInstance: this.firestoreInstance,
                     );
                   }
                   return FeedListTile(
-                      feedItemAndTime: this.feedItemAndTimes[index],
-                      initialVotedUri: votedUris[votedUriIndex]);
+                    feedItemAndTime: this.feedItemAndTimes[index],
+                    initialVotedUri: votedUris[votedUriIndex],
+                    firestoreInstance: this.firestoreInstance,
+                  );
                 },
               );
           }
@@ -371,9 +249,12 @@ class SortedFeedListWithVote extends StatelessWidget {
 class FeedListTile extends StatelessWidget {
   final FeedItemAndTime feedItemAndTime;
   final VotedUri initialVotedUri;
+  final FirebaseFirestore firestoreInstance;
 
   FeedListTile(
-      {@required this.feedItemAndTime, @required this.initialVotedUri});
+      {@required this.feedItemAndTime,
+      @required this.initialVotedUri,
+      @required this.firestoreInstance});
 
   _navigate(BuildContext context) async {
     await Navigator.push(
@@ -403,7 +284,9 @@ class FeedListTile extends StatelessWidget {
         subtitle: Text(this.feedItemAndTime.dateTime.toString()),
         trailing: Container(
           width: 200,
-          child: UpDownVoteButtons(initialVotedUri: this.initialVotedUri),
+          child: UpDownVoteButtons(
+              firestoreInstance: this.firestoreInstance,
+              initialVotedUri: this.initialVotedUri),
         ),
       ),
     );

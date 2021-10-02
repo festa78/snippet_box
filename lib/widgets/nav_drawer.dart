@@ -7,7 +7,7 @@ import 'package:myapp/models/user.dart';
 class NavDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final userData = Provider.of<MyUser>(context);
+    final userData = Provider.of<SnippetBoxUser>(context);
 
     return Drawer(
         child: ListView(padding: EdgeInsets.zero, children: <Widget>[

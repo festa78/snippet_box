@@ -7,46 +7,6 @@ import 'package:myapp/services/firebase_auth_service.dart';
 import 'package:myapp/widgets/nav_drawer.dart';
 import 'package:myapp/widgets/item_list.dart';
 import 'package:myapp/widgets/item_editor.dart';
-import 'package:myapp/widgets/feed.dart';
-
-class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key, this.title}) : super(key: key);
-
-  final String title;
-
-  @override
-  _MyHomePageState createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  int _currentIndex = 0;
-  final _pageWidgets = [
-    SavedPage(title: 'Saved page'),
-    FeedListPage(
-      title: 'News feed page',
-      rssUrlParser: RssUrlParser(),
-    ),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: _pageWidgets.elementAt(_currentIndex),
-      bottomNavigationBar: BottomNavigationBar(
-        items: <BottomNavigationBarItem>[
-          BottomNavigationBarItem(icon: Icon(Icons.bookmark), label: 'Saved'),
-          BottomNavigationBarItem(icon: Icon(Icons.feed), label: 'News Feed'),
-        ],
-        currentIndex: _currentIndex,
-        fixedColor: Colors.blueAccent,
-        onTap: _onItemTapped,
-        type: BottomNavigationBarType.fixed,
-      ),
-    );
-  }
-
-  void _onItemTapped(int index) => setState(() => _currentIndex = index);
-}
 
 enum ArticleTypes {
   URL,
@@ -127,7 +87,7 @@ class _SavedPageState extends State<SavedPage> {
                 onPressed: () async {
                   print(
                       'Add new title ${titleController.text} with article ${contentController.text}');
-                  final userData = Provider.of<MyUser>(context);
+                  final userData = Provider.of<SnippetBoxUser>(context);
                   await FirebaseFirestore.instance
                       .collection('user_data')
                       .doc(userData.uid)

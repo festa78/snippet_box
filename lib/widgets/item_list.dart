@@ -59,7 +59,7 @@ class ItemList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final userData = Provider.of<MyUser>(context);
+    final userData = Provider.of<SnippetBoxUser>(context);
 
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
@@ -115,7 +115,7 @@ class ContentViewer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final userData = Provider.of<MyUser>(context);
+    final userData = Provider.of<SnippetBoxUser>(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -217,7 +217,7 @@ class _TagEditorState extends State<TagEditor> {
 
   @override
   Widget build(BuildContext context) {
-    final userData = Provider.of<MyUser>(context);
+    final userData = Provider.of<SnippetBoxUser>(context);
 
     return FutureBuilder(
       future: this._tags,

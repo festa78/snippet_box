@@ -8,6 +8,7 @@ import 'package:webfeed/webfeed.dart';
 import 'package:xml/xml.dart';
 
 import 'package:myapp/models/user.dart';
+import 'package:myapp/models/feed.dart';
 import 'package:myapp/widgets/feed.dart';
 import 'package:myapp/widgets/up_down_vote_buttons.dart';
 
@@ -48,7 +49,10 @@ void main() {
         child: MaterialApp(
           home: Scaffold(
             body: FeedListTile(
-                feedItemAndTime: feedItemAndTime, initialVotedUri: votedUri),
+              feedItemAndTime: feedItemAndTime,
+              initialVotedUri: votedUri,
+              firestoreInstance: FakeFirebaseFirestore(),
+            ),
           ),
         ),
       );
@@ -165,7 +169,7 @@ void main() {
         data: MediaQueryData(),
         child: MaterialApp(
           home: Provider(
-            create: (_) => MyUser(uid: 'dummy_uid'),
+            create: (_) => SnippetBoxUser(uid: 'dummy_uid'),
             child: Scaffold(
               body: SortedFeedListWithVote(
                 feedItemAndTimes: AtomFeedItems(atomXml).getItems(),
@@ -204,7 +208,7 @@ void main() {
         data: MediaQueryData(),
         child: MaterialApp(
           home: Provider(
-            create: (_) => MyUser(uid: 'dummy_uid'),
+            create: (_) => SnippetBoxUser(uid: 'dummy_uid'),
             child: Scaffold(
               body: SortedFeedList(
                 xmlDataList: [Future<String>.value(atomXml)],
@@ -265,7 +269,7 @@ void main() {
         data: MediaQueryData(),
         child: MaterialApp(
           home: Provider(
-            create: (_) => MyUser(uid: 'dummy_uid'),
+            create: (_) => SnippetBoxUser(uid: 'dummy_uid'),
             child: Scaffold(
               body: FeedList(
                 firestoreInstance: instance,

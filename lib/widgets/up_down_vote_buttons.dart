@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'package:myapp/models/user.dart';
-import 'package:myapp/widgets/feed.dart';
+import 'package:myapp/models/feed.dart';
 
 class UpDownVoteButtons extends StatefulWidget {
   final FirebaseFirestore firestoreInstance;
@@ -29,7 +29,8 @@ class UpDownVoteButtonsState extends State<UpDownVoteButtons> {
           icon: Icon(Icons.thumb_up),
           color: this.votedUri.state > 0 ? Colors.blueAccent : Colors.grey,
           onPressed: () {
-            final userData = Provider.of<MyUser>(context, listen: false);
+            final userData =
+                Provider.of<SnippetBoxUser>(context, listen: false);
 
             final collectionRef = this
                 .widget
@@ -73,7 +74,8 @@ class UpDownVoteButtonsState extends State<UpDownVoteButtons> {
           icon: Icon(Icons.thumb_down),
           color: this.votedUri.state < 0 ? Colors.blueAccent : Colors.grey,
           onPressed: () {
-            final userData = Provider.of<MyUser>(context, listen: false);
+            final userData =
+                Provider.of<SnippetBoxUser>(context, listen: false);
 
             final collectionRef = this
                 .widget
