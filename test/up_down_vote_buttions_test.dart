@@ -5,13 +5,14 @@ import 'package:provider/provider.dart';
 
 import 'package:myapp/models/user.dart';
 import 'package:myapp/models/feed.dart';
-import 'package:myapp/widgets/up_down_vote_buttons.dart';
+import 'package:myapp/widgets/feed_list/up_down_vote_buttons.dart';
 
 void main() {
   Widget sut;
+  var instance = FakeFirebaseFirestore();
 
   group('UpDownVoteButtons', () {
-    setUpAll(() async {
+    setUp(() async {
       // Build our app and trigger a frame.
       sut = MediaQuery(
         data: MediaQueryData(),
@@ -22,7 +23,7 @@ void main() {
               body: UpDownVoteButtons(
                 initialVotedUri: VotedUri(
                     uri: 'dummy_uri', state: 0, uriCreatedAt: DateTime.now()),
-                firestoreInstance: FakeFirebaseFirestore(),
+                firestoreInstance: instance,
               ),
             ),
           ),
@@ -30,10 +31,20 @@ void main() {
       );
     });
 
+    tearDown(() async {
+      instance = FakeFirebaseFirestore();
+    });
+
     final verifier = (WidgetTester tester, int state) {
       final upDownVoteButtons =
           tester.state<UpDownVoteButtonsState>(find.byType(UpDownVoteButtons));
       expect(upDownVoteButtons.votedUri.state, equals(state));
+      if (state == 0) {
+        expect(upDownVoteButtons.votedUri.docId, isNull);
+      } else {
+        expect(upDownVoteButtons.votedUri.docId, isNotNull);
+      }
+
       final upButton = tester
           .element(find.byIcon(Icons.thumb_up))
           .findAncestorWidgetOfExactType<IconButton>();
@@ -50,6 +61,13 @@ void main() {
       expect(find.byIcon(Icons.thumb_up), findsOneWidget);
       expect(find.byIcon(Icons.thumb_down), findsOneWidget);
       verifier(tester, 0);
+
+      await instance
+          .collection('user_data')
+          .doc('dummy_uid')
+          .collection('votes')
+          .get()
+          .then((snapshot) => expect(snapshot.docs.length, 0));
     });
 
     testWidgets('Verify thumb_up button is selected and its color is changed',
@@ -59,6 +77,14 @@ void main() {
       await tester.pumpWidget(sut);
 
       verifier(tester, 1);
+      await instance
+          .collection('user_data')
+          .doc('dummy_uid')
+          .collection('votes')
+          .get()
+          .then((snapshot) {
+        expect(snapshot.docs.length, 1);
+      });
     });
 
     testWidgets('Verify thumb_down button is selected and its color is changed',
@@ -68,6 +94,12 @@ void main() {
       await tester.pumpWidget(sut);
 
       verifier(tester, -1);
+      await instance
+          .collection('user_data')
+          .doc('dummy_uid')
+          .collection('votes')
+          .get()
+          .then((snapshot) => expect(snapshot.docs.length, 1));
     });
 
     testWidgets('Verify thumb_up button state can toggle',

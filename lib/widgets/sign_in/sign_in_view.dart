@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'strings.dart';
-import 'sign_in_view_model.dart';
-import 'widgets/google_sign_in_button.dart';
+import '../../models/strings.dart';
+import '../../models/sign_in_view_model.dart';
+import 'google_sign_in_button.dart';
 
 class SignInView extends StatelessWidget {
   const SignInView({Key key}) : super(key: key);

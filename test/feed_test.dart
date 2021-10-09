@@ -9,8 +9,8 @@ import 'package:xml/xml.dart';
 
 import 'package:myapp/models/user.dart';
 import 'package:myapp/models/feed.dart';
-import 'package:myapp/widgets/feed.dart';
-import 'package:myapp/widgets/up_down_vote_buttons.dart';
+import 'package:myapp/widgets/feed_list/feed.dart';
+import 'package:myapp/widgets/feed_list/up_down_vote_buttons.dart';
 
 class FakeRssUrlParser extends Fake implements RssUrlParser {
   List<String> returnValues;
@@ -89,7 +89,10 @@ void main() {
         child: MaterialApp(
           home: Scaffold(
             body: FeedListTile(
-                feedItemAndTime: feedItemAndTime, initialVotedUri: votedUri),
+              feedItemAndTime: feedItemAndTime,
+              initialVotedUri: votedUri,
+              firestoreInstance: FakeFirebaseFirestore(),
+            ),
           ),
         ),
       );
@@ -126,7 +129,10 @@ void main() {
         child: MaterialApp(
           home: Scaffold(
             body: FeedListTile(
-                feedItemAndTime: feedItemAndTime, initialVotedUri: votedUri),
+              feedItemAndTime: feedItemAndTime,
+              initialVotedUri: votedUri,
+              firestoreInstance: FakeFirebaseFirestore(),
+            ),
           ),
         ),
       );

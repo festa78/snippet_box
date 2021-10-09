@@ -1,11 +1,11 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:easy_web_view/easy_web_view.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'package:myapp/models/feed.dart';
 import 'package:myapp/models/user.dart';
-import 'package:myapp/widgets/up_down_vote_buttons.dart';
+import 'package:myapp/widgets/feed_list/up_down_vote_buttons.dart';
 
 class FeedListPage extends StatelessWidget {
   final String title;

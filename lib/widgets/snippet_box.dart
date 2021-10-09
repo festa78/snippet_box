@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'package:myapp/authentication/sign_in_view.dart';
+import 'package:myapp/widgets/sign_in/sign_in_view.dart';
 import 'package:myapp/models/user.dart';
 import 'package:myapp/services/firebase_auth_service.dart';
 import 'package:myapp/widgets/user_page.dart';
