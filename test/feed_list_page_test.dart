@@ -9,17 +9,17 @@ import 'package:xml/xml.dart';
 
 import 'package:myapp/models/user.dart';
 import 'package:myapp/models/feed.dart';
-import 'package:myapp/widgets/feed_list/feed.dart';
+import 'package:myapp/widgets/feed_list/feed_list_page.dart';
 import 'package:myapp/widgets/feed_list/up_down_vote_buttons.dart';
 
-class FakeRssUrlParser extends Fake implements RssUrlParser {
+class FakeRssUriParser extends Fake implements RssUriParser {
   List<String> returnValues;
   int index = 0;
 
-  FakeRssUrlParser({@required this.returnValues});
+  FakeRssUriParser({@required this.returnValues});
 
   @override
-  Future<String> parse(String uri) {
+  Future<String> getRssContent(String uri) {
     final returnValue = this.returnValues[this.index];
     this.index += 1;
     return Future.value(returnValue);
@@ -280,7 +280,7 @@ void main() {
               body: FeedList(
                 firestoreInstance: instance,
                 rssUrlParser:
-                    FakeRssUrlParser(returnValues: [atomXml1, atomXml2]),
+                    FakeRssUriParser(returnValues: [atomXml1, atomXml2]),
               ),
             ),
           ),

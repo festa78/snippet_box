@@ -8,9 +8,9 @@ import 'package:myapp/models/user.dart';
 import 'package:myapp/widgets/feed_list/up_down_vote_buttons.dart';
 
 class VotedListPage extends StatelessWidget {
-  final String title;
+  final String title = 'Voted feed page';
 
-  VotedListPage({@required this.title});
+  VotedListPage();
 
   @override
   Widget build(BuildContext context) {

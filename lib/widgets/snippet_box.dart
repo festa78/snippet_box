@@ -39,7 +39,7 @@ class LogInPage extends StatelessWidget {
           if (user == null) {
             return const SignInView();
           } else {
-            return UserPage(title: 'Snippet box');
+            return UserPage();
           }
         },
       ),

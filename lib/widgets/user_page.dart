@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 
 import 'package:myapp/models/feed.dart';
-import 'package:myapp/widgets/feed_list/feed.dart';
+import 'package:myapp/widgets/feed_list/feed_list_page.dart';
 import 'package:myapp/widgets/saved_page.dart';
 import 'package:myapp/widgets/voted_list_page.dart';
 
 class UserPage extends StatefulWidget {
-  UserPage({Key key, this.title}) : super(key: key);
+  final String title = 'Snippet Box';
 
-  final String title;
+  UserPage({Key key}) : super(key: key);
 
   @override
   _UserPageState createState() => _UserPageState();
@@ -17,14 +17,11 @@ class UserPage extends StatefulWidget {
 class _UserPageState extends State<UserPage> {
   int _currentIndex = 0;
   final _pageWidgets = [
-    SavedPage(title: 'Saved page'),
+    SavedPage(),
     FeedListPage(
-      title: 'News feed page',
       rssUrlParser: RssUrlParser(),
     ),
-    VotedListPage(
-      title: 'Voted feed page',
-    ),
+    VotedListPage(),
   ];
 
   @override

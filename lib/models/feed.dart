@@ -1,5 +1,6 @@
 import 'package:webfeed/webfeed.dart';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 
 enum FeedTypes {
@@ -8,15 +9,39 @@ enum FeedTypes {
   UNKNOWN,
 }
 
-class RssUrlParser {
-  final HttpsCallable getRssContent =
+class RssUriParser {
+  var getRssContentFunction =
       FirebaseFunctions.instance.httpsCallable('getRssContent');
 
-  Future<String> parse(String uri) {
-    return this.getRssContent(uri).then((res) {
+  RssUriParser({this.getRssContentFunction});
+
+  Future<String> getRssContent(String uri) {
+    return this.getRssContentFunction(uri).then((res) {
       return res.data.toString();
     }).catchError((error) {
       throw error;
+    });
+  }
+}
+
+class RssUriStore {
+  FirebaseFirestore firestoreInstance = FirebaseFirestore.instance;
+
+  RssUriStore({this.firestoreInstance});
+
+  saveToFirestore(String userId, String uri) {
+    RssUriParser().getRssContent(uri).then((rssContent) {
+      final feedType = getFeedType(rssContent);
+      return this
+          .firestoreInstance
+          .collection('user_data')
+          .doc(userId)
+          .collection('feeds')
+          .add({
+        'type': feedType.toString(),
+        'uri': uri,
+        'timestamp': FieldValue.serverTimestamp(),
+      });
     });
   }
 }

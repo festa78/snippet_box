@@ -15,9 +15,9 @@ enum ArticleTypes {
 }
 
 class SavedPage extends StatefulWidget {
-  SavedPage({Key key, this.title}) : super(key: key);
+  SavedPage({Key key}) : super(key: key);
 
-  final String title;
+  final String title = 'Saved Page';
   final String tagPrefix = 'label:';
 
   @override

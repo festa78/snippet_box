@@ -8,10 +8,10 @@ import 'package:myapp/models/user.dart';
 import 'package:myapp/widgets/feed_list/up_down_vote_buttons.dart';
 
 class FeedListPage extends StatelessWidget {
-  final String title;
-  final RssUrlParser rssUrlParser;
+  final String title = 'News feed page';
+  final RssUriStore rssUriStore;
 
-  FeedListPage({@required this.title, @required this.rssUrlParser});
+  FeedListPage({@required this.rssUriStore});
 
   _saveUrlToFirestore(BuildContext context) {
     final contentController = TextEditingController();
@@ -30,20 +30,9 @@ class FeedListPage extends StatelessWidget {
                 child: new Text('Add'),
                 onPressed: () async {
                   print('Add new feed ${contentController.text}');
-                  final userData =
-                      Provider.of<SnippetBoxUser>(context, listen: false);
-                  final res =
-                      await this.rssUrlParser.parse(contentController.text);
-                  final FeedTypes feedType = getFeedType(res);
-                  await FirebaseFirestore.instance
-                      .collection('user_data')
-                      .doc(userData.uid)
-                      .collection('feeds')
-                      .add({
-                    'type': feedType.toString(),
-                    'uri': contentController.text,
-                    'timestamp': FieldValue.serverTimestamp(),
-                  });
+                  await this.rssUriStore.saveToFirestore(
+                      Provider.of<SnippetBoxUser>(context, listen: false).uid,
+                      contentController.text);
                   Navigator.of(context).pop();
                 },
               ),
@@ -66,7 +55,7 @@ class FeedListPage extends StatelessWidget {
       ),
       body: FeedList(
         firestoreInstance: FirebaseFirestore.instance,
-        rssUrlParser: this.rssUrlParser,
+        rssUrlParser: RssUriParser(),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
@@ -81,7 +70,7 @@ class FeedListPage extends StatelessWidget {
 
 class FeedList extends StatelessWidget {
   final FirebaseFirestore firestoreInstance;
-  final RssUrlParser rssUrlParser;
+  final RssUriParser rssUrlParser;
 
   FeedList({@required this.firestoreInstance, this.rssUrlParser});
 
@@ -108,7 +97,7 @@ class FeedList extends StatelessWidget {
               return SortedFeedList(
                 xmlDataList:
                     snapshot.data.docs.map((DocumentSnapshot document) {
-                  return this.rssUrlParser.parse(document['uri']);
+                  return this.rssUrlParser.getRssContent(document['uri']);
                 }).toList(),
                 firestoreInstance: this.firestoreInstance,
               );
