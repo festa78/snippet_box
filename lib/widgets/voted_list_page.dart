@@ -71,6 +71,7 @@ class VotedList extends StatelessWidget {
                   snapshot.data.docs.map((DocumentSnapshot document) {
                 return VotedUri(
                     uri: document['uri'],
+                    title: document['title'],
                     state: document['state'],
                     uriCreatedAt: document['uriCreatedAt'].toDate(),
                     docId: document.id);

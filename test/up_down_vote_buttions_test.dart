@@ -22,7 +22,10 @@ void main() {
             child: Scaffold(
               body: UpDownVoteButtons(
                 initialVotedUri: VotedUri(
-                    uri: 'dummy_uri', state: 0, uriCreatedAt: DateTime.now()),
+                    uri: 'dummy_uri',
+                    title: 'dummy_title',
+                    state: 0,
+                    uriCreatedAt: DateTime.now()),
                 firestoreInstance: instance,
               ),
             ),

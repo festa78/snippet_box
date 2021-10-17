@@ -47,6 +47,7 @@ class UpDownVoteButtonsState extends State<UpDownVoteButtons> {
                         docId: null,
                         state: 0,
                         uri: this.votedUri.uri,
+                        title: this.votedUri.title,
                         uriCreatedAt: this.votedUri.uriCreatedAt);
                   });
                 }).catchError((error) =>
@@ -57,6 +58,7 @@ class UpDownVoteButtonsState extends State<UpDownVoteButtons> {
                 collectionRef.add({
                   'state': 1,
                   'uri': this.votedUri.uri,
+                  'title': this.votedUri.title,
                   'uriCreatedAt': this.votedUri.uriCreatedAt,
                 }).then((DocumentReference docRef) {
                   setState(() {
@@ -64,6 +66,7 @@ class UpDownVoteButtonsState extends State<UpDownVoteButtons> {
                         docId: docRef.id,
                         state: 1,
                         uri: this.votedUri.uri,
+                        title: this.votedUri.title,
                         uriCreatedAt: this.votedUri.uriCreatedAt);
                   });
                 });
@@ -76,6 +79,7 @@ class UpDownVoteButtonsState extends State<UpDownVoteButtons> {
                     this.votedUri = VotedUri(
                         docId: this.votedUri.docId,
                         uri: this.votedUri.uri,
+                        title: this.votedUri.title,
                         state: 1,
                         uriCreatedAt: this.votedUri.uriCreatedAt);
                   });
@@ -110,6 +114,7 @@ class UpDownVoteButtonsState extends State<UpDownVoteButtons> {
                     this.votedUri = VotedUri(
                         docId: this.votedUri.docId,
                         uri: this.votedUri.uri,
+                        title: this.votedUri.title,
                         state: -1,
                         uriCreatedAt: this.votedUri.uriCreatedAt);
                   });
@@ -121,6 +126,7 @@ class UpDownVoteButtonsState extends State<UpDownVoteButtons> {
                 collectionRef.add({
                   'state': -1,
                   'uri': this.votedUri.uri,
+                  'title': this.votedUri.title,
                   'uriCreatedAt': this.votedUri.uriCreatedAt,
                 }).then((DocumentReference docRef) {
                   setState(() {
@@ -128,6 +134,7 @@ class UpDownVoteButtonsState extends State<UpDownVoteButtons> {
                         docId: docRef.id,
                         state: -1,
                         uri: this.votedUri.uri,
+                        title: this.votedUri.title,
                         uriCreatedAt: this.votedUri.uriCreatedAt);
                   });
                 });
@@ -139,6 +146,7 @@ class UpDownVoteButtonsState extends State<UpDownVoteButtons> {
                         docId: null,
                         state: 0,
                         uri: this.votedUri.uri,
+                        title: this.votedUri.title,
                         uriCreatedAt: this.votedUri.uriCreatedAt);
                   });
                 }).catchError((error) =>

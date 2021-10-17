@@ -19,7 +19,7 @@ class _UserPageState extends State<UserPage> {
   final _pageWidgets = [
     SavedPage(),
     FeedListPage(
-      rssUrlParser: RssUrlParser(),
+      rssUriStore: RssUriStore(),
     ),
     VotedListPage(),
   ];

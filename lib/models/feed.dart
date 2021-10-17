@@ -10,10 +10,14 @@ enum FeedTypes {
 }
 
 class RssUriParser {
-  var getRssContentFunction =
+  HttpsCallable getRssContentFunction;
+  final defaultGetRssContentFunction =
       FirebaseFunctions.instance.httpsCallable('getRssContent');
 
-  RssUriParser({this.getRssContentFunction});
+  RssUriParser({this.getRssContentFunction}) {
+    // Avoid non-const default value error.
+    this.getRssContentFunction ??= this.defaultGetRssContentFunction;
+  }
 
   Future<String> getRssContent(String uri) {
     return this.getRssContentFunction(uri).then((res) {
@@ -140,12 +144,14 @@ class VotedUri {
   // <0: negative, 0: not selected, >0: positive.
   final int state;
   final String uri;
+  final String title;
   final DateTime uriCreatedAt;
   // expect null as we do not store a document when it is not voted for efficiency.
   final String docId;
 
   VotedUri({
     @required this.uri,
+    @required this.title,
     @required this.state,
     @required this.uriCreatedAt,
     this.docId,

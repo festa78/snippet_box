@@ -40,8 +40,11 @@ void main() {
       final xmlDocument = XmlDocument.parse(atomXml);
       final atomItem = AtomItem.parse(xmlDocument.getElement('entry'));
       final feedItemAndTime = FeedItemAndTime(atomItem);
-      final votedUri =
-          VotedUri(uri: 'dummy_uri', state: 0, uriCreatedAt: DateTime.now());
+      final votedUri = VotedUri(
+          uri: 'dummy_uri',
+          title: 'dummy_title',
+          state: 0,
+          uriCreatedAt: DateTime.now());
 
       // Build our app and trigger a frame.
       final sut = MediaQuery(
@@ -80,8 +83,11 @@ void main() {
       final xmlDocument = XmlDocument.parse(rssXml);
       final rssItem = RssItem.parse(xmlDocument.getElement('item'));
       final feedItemAndTime = FeedItemAndTime(rssItem);
-      final votedUri =
-          VotedUri(uri: 'dummy_uri', state: 0, uriCreatedAt: DateTime.now());
+      final votedUri = VotedUri(
+          uri: 'dummy_uri',
+          title: 'dummy_title',
+          state: 0,
+          uriCreatedAt: DateTime.now());
 
       // Build our app and trigger a frame.
       final sut = MediaQuery(
@@ -120,8 +126,11 @@ void main() {
       final xmlDocument = XmlDocument.parse(rssXml);
       final rssItem = RssItem.parse(xmlDocument.getElement('item'));
       final feedItemAndTime = FeedItemAndTime(rssItem);
-      final votedUri =
-          VotedUri(uri: 'dummy_uri', state: 1, uriCreatedAt: DateTime.now());
+      final votedUri = VotedUri(
+          uri: 'dummy_uri',
+          title: 'dummy_title',
+          state: 1,
+          uriCreatedAt: DateTime.now());
 
       // Build our app and trigger a frame.
       final sut = MediaQuery(

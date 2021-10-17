@@ -193,6 +193,7 @@ class SortedFeedListWithVote extends StatelessWidget {
                   snapshot.data.docs.map((DocumentSnapshot document) {
                 return VotedUri(
                     uri: document['uri'],
+                    title: document['title'],
                     state: document['state'],
                     uriCreatedAt: document['uriCreatedAt'].toDate(),
                     docId: document.id);
@@ -218,6 +219,7 @@ class SortedFeedListWithVote extends StatelessWidget {
                       feedItemAndTime: this.feedItemAndTimes[index],
                       initialVotedUri: VotedUri(
                           uri: this.feedItemAndTimes[index].uri,
+                          title: this.feedItemAndTimes[index].title,
                           state: 0,
                           uriCreatedAt: this.feedItemAndTimes[index].dateTime),
                       firestoreInstance: this.firestoreInstance,
