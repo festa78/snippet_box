@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import 'package:myapp/models/feed.dart';
 import 'package:myapp/widgets/feed_list/feed_list_page.dart';
-import 'package:myapp/widgets/saved_page.dart';
 import 'package:myapp/widgets/voted_list_page.dart';
 
 class UserPage extends StatefulWidget {
@@ -17,7 +16,6 @@ class UserPage extends StatefulWidget {
 class _UserPageState extends State<UserPage> {
   int _currentIndex = 0;
   final _pageWidgets = [
-    SavedPage(),
     FeedListPage(
       rssUriStore: RssUriStore(),
     ),
@@ -30,7 +28,6 @@ class _UserPageState extends State<UserPage> {
       body: _pageWidgets.elementAt(_currentIndex),
       bottomNavigationBar: BottomNavigationBar(
         items: <BottomNavigationBarItem>[
-          BottomNavigationBarItem(icon: Icon(Icons.bookmark), label: 'Saved'),
           BottomNavigationBarItem(icon: Icon(Icons.feed), label: 'News Feed'),
           BottomNavigationBarItem(icon: Icon(Icons.thumb_up), label: 'Voted'),
         ],
