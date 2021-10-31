@@ -1,8 +1,12 @@
 {
   "name": "functions",
   "description": "Cloud Functions for Firebase",
+  "main": "lib/index.js",
   "scripts": {
-    "lint": "eslint .",
+    "lint": "npx prettier -c src/ && npx eslint src/",
+    "format": "npx prettier --write src/",
+    "fix": "npm run format && npm run lint",
+    "build": "npm run lint && tsc",
     "serve": "firebase emulators:start --only functions",
     "shell": "firebase functions:shell",
     "start": "npm run shell",
@@ -22,10 +26,23 @@
     "sinon": "^11.1.2"
   },
   "devDependencies": {
+    "@types/chai": "^4.2.22",
+    "@types/firebase": "^3.2.1",
+    "@types/mocha": "^9.0.0",
+    "@types/node-fetch": "^2.5.12",
+    "@types/sinon": "^10.0.6",
+    "@typescript-eslint/eslint-plugin": "^5.2.0",
+    "@typescript-eslint/parser": "^5.2.0",
     "eslint": "^8.1.0",
+    "eslint-config-google": "^0.14.0",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-import": "^2.25.2",
+    "eslint-plugin-prettier": "^4.0.0",
     "eslint-plugin-promise": "^4.3.1",
     "firebase-functions-test": "^0.2.3",
-    "mocha": "^9.1.3"
+    "mocha": "^9.1.3",
+    "prettier": "^2.4.1",
+    "typescript": "^4.4.4"
   },
   "private": true
 }
