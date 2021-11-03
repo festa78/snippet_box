@@ -83,7 +83,7 @@ class FeedList extends StatelessWidget {
             .firestoreInstance
             .collection('user_data')
             .doc(userData.uid)
-            .collection('feeds')
+            .collection('feed_uris')
             .snapshots(),
         builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
           if (snapshot.hasError) {
@@ -168,6 +168,10 @@ class SortedFeedListWithVote extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (this.feedItemAndTimes.length == 0) {
+      return Text("No RSS urls registered. Please add the RSS url first.");
+    }
+
     final userData = Provider.of<SnippetBoxUser>(context);
     final startDate =
         this.feedItemAndTimes[this.feedItemAndTimes.length - 1].dateTime;

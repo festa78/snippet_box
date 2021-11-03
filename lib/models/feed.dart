@@ -29,9 +29,11 @@ class RssUriParser {
 }
 
 class RssUriStore {
-  FirebaseFirestore firestoreInstance = FirebaseFirestore.instance;
+  FirebaseFirestore firestoreInstance;
 
-  RssUriStore({this.firestoreInstance});
+  RssUriStore({this.firestoreInstance}) {
+    this.firestoreInstance ??= FirebaseFirestore.instance;
+  }
 
   saveToFirestore(String userId, String uri) {
     RssUriParser().getRssContent(uri).then((rssContent) {
@@ -40,7 +42,7 @@ class RssUriStore {
           .firestoreInstance
           .collection('user_data')
           .doc(userId)
-          .collection('feeds')
+          .collection('feed_uris')
           .add({
         'type': feedType.toString(),
         'uri': uri,

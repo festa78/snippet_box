@@ -26,7 +26,7 @@ class VotedListPage extends StatelessWidget {
 }
 
 class VotedList extends StatelessWidget {
-  final FirebaseFirestore firestoreInstance;
+  FirebaseFirestore firestoreInstance;
 
   VotedList({@required this.firestoreInstance});
 
@@ -76,6 +76,10 @@ class VotedList extends StatelessWidget {
                     uriCreatedAt: document['uriCreatedAt'].toDate(),
                     docId: document.id);
               }).toList();
+
+              if (votedUris.length == 0) {
+                return Text("No voted feeds found. Please vote first.");
+              }
 
               return ListView.builder(
                   shrinkWrap: true,

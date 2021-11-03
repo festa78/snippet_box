@@ -11,7 +11,7 @@ service cloud.firestore {
     // Make sure to write security rules for your app before that time, or else
     // your app will lose access to your Firestore database
     match /user_data/{user_id} {
-    	match /feeds/{feed} {
+    	match /feed_uris/{feed} {
         allow read, write: if request.auth != null && request.auth.uid == user_id;
       }
     	match /votes/{vote} {

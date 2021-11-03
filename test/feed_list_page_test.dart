@@ -205,6 +205,30 @@ void main() {
           tester.state<UpDownVoteButtonsState>(find.byType(UpDownVoteButtons));
       expect(upDownVoteButtons.votedUri.state, equals(1));
     });
+
+    testWidgets('Handle when there are no feeds', (WidgetTester tester) async {
+      final instance = FakeFirebaseFirestore();
+
+      final sut = MediaQuery(
+        data: MediaQueryData(),
+        child: MaterialApp(
+          home: Provider(
+            create: (_) => SnippetBoxUser(uid: 'dummy_uid'),
+            child: Scaffold(
+              body: SortedFeedListWithVote(
+                feedItemAndTimes: [],
+                firestoreInstance: instance,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpWidget(sut);
+
+      // Verify it shows the text message.
+      expect(find.text("No RSS urls registered. Please add the RSS url first."),
+          findsOneWidget);
+    });
   });
 
   group('SortedFeedList', () {
@@ -252,12 +276,12 @@ void main() {
       await instance
           .collection('user_data')
           .doc('dummy_uid')
-          .collection('feeds')
+          .collection('feed_uris')
           .add({'uri': 'dummy_url1'});
       await instance
           .collection('user_data')
           .doc('dummy_uid')
-          .collection('feeds')
+          .collection('feed_uris')
           .add({'uri': 'dummy_url2'});
 
       final String atomXml1 = '''<?xml version="1.0"?>
