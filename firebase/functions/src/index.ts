@@ -4,7 +4,7 @@ import fetch, { Response } from 'node-fetch';
 
 admin.initializeApp();
 
-exports.getRssContent = functions.https.onCall(
+export const getRssContent = functions.https.onCall(
   (data: string, context: functions.https.CallableContext) => {
     if (!context.auth) {
       throw new functions.https.HttpsError('permission-denied', 'Auth Error');
@@ -20,7 +20,7 @@ exports.getRssContent = functions.https.onCall(
   }
 );
 
-exports.getRssContent = functions.https.onCall(
+export const updateRssContent = functions.https.onCall(
   (context: functions.https.CallableContext) => {
     if (!context.auth) {
       throw new functions.https.HttpsError('permission-denied', 'Auth Error');
