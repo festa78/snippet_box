@@ -46,9 +46,9 @@ export const updateRssContent = functions.https.onCall(
           uriSnapshots
             .filter((uriSnapshot) => uriSnapshot.exists)
             .map((uriSnapshot) => {
-              const uriData = uriSnapshot.data()!;
+              const uriData = uriSnapshot.data();
               const parser = new Parser();
-              return parser.parseURL(uriData['uri']);
+              return parser.parseURL(uriData?.['uri']);
             })
         );
       })
@@ -62,21 +62,25 @@ export const updateRssContent = functions.https.onCall(
                 .firestore()
                 .collection('rss_contents_store')
                 .doc('rss_content')
+                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
                 .collection(rssContent.feedUrl!.replace(/\//g, '_'));
 
               return rssContent.items
                 .filter((rssItem) => rssItem.link != undefined)
                 .map((rssItem) => {
-                  return uriCollectionRef
-                    .doc(rssItem.link!.replace(/\//g, '_'))
-                    .set(
-                      {
-                        title: rssItem.title,
-                        content: rssItem.content,
-                        pubDate: rssItem.pubDate,
-                      },
-                      { merge: true }
-                    );
+                  return (
+                    uriCollectionRef
+                      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                      .doc(rssItem.link!.replace(/\//g, '_'))
+                      .set(
+                        {
+                          title: rssItem.title,
+                          content: rssItem.content,
+                          pubDate: rssItem.pubDate,
+                        },
+                        { merge: true }
+                      )
+                  );
                 });
             })
         );

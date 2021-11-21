@@ -1,3 +1,4 @@
 node_modules/
+lib/
 *.runtimeconfig.json
 test/flutter-myapp-*.json

@@ -70,5 +70,5 @@ describe('updateRssContent', () => {
     ).then((docs) => {
       return Promise.all(docs.map((doc) => expect(doc.length > 0)));
     });
-  });
+  }).timeout(4000);
 });
