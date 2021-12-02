@@ -26,18 +26,9 @@ describe('getRssContent', () => {
   });
 });
 
-describe('updateRssContent', () => {
-  it('Throw error with un-authorized request', () => {
-    const wrapped = test.wrap(sut.updateRssContent);
-    assert.throws(
-      () => wrapped('example.com', {}),
-      functions.https.HttpsError,
-      'Auth Error'
-    );
-  });
-
+describe('updateRssContentOnSchedule', () => {
   it('Parse and update rss feed contents', async () => {
-    const wrapped = test.wrap(sut.updateRssContent);
+    const wrapped = test.wrap(sut.updateRssContentOnSchedule);
     const testUris = [
       { uri: 'https://hnrss.org/frontpage' },
       { uri: 'https://www.reddit.com/.rss' },
@@ -54,7 +45,7 @@ describe('updateRssContent', () => {
       )
     );
 
-    await wrapped({ auth: true });
+    await wrapped({});
 
     const rssContentDocRef = admin
       .firestore()

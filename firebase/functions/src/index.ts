@@ -17,12 +17,10 @@ export const getRssContent = functions.https.onCall(
   }
 );
 
-export const updateRssContent = functions.https.onCall(
-  (context: functions.https.CallableContext) => {
-    if (!context.auth) {
-      throw new functions.https.HttpsError('permission-denied', 'Auth Error');
-    }
-
+export const updateRssContentOnSchedule = functions.pubsub
+  .schedule('every 24 hours')
+  .onRun(
+  (context: functions.EventContext) => {
     return admin
       .firestore()
       .collection('user_data')
