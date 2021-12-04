@@ -1,5 +1,6 @@
 import * as admin from 'firebase-admin';
 import * as functions from 'firebase-functions';
+// import { google } from 'googleapis';
 import fetch from 'node-fetch';
 import Parser from 'rss-parser';
 
@@ -19,8 +20,7 @@ export const getRssContent = functions.https.onCall(
 
 export const updateRssContentOnSchedule = functions.pubsub
   .schedule('every 24 hours')
-  .onRun(
-  (context: functions.EventContext) => {
+  .onRun(() => {
     return admin
       .firestore()
       .collection('user_data')
@@ -83,5 +83,34 @@ export const updateRssContentOnSchedule = functions.pubsub
             })
         );
       });
-  }
-);
+  });
+
+export const exportRssToStorage = functions.firestore
+  .document('rss_contents_store/rss_content/{feedUrl}')
+  .onWrite(async (snap, context) => {
+    const auth = new admin.firestore.v1.FirestoreAdminClient();
+    const projectId = admin.installations().app.options.projectId;
+
+    await admin
+      .storage()
+      .bucket(`${projectId}.appspot.com`)
+      .deleteFiles({
+        prefix: `tests/rss_content_exports/${context.params.feedUrl}`,
+      });
+
+    await auth
+      .exportDocuments({
+        name: `projects/${projectId}/databases/(default)`,
+        collectionIds: [`${context.params.feedUrl}`],
+        outputUriPrefix: `gs://${projectId}.appspot.com/tests/rss_content_exports/${context.params.feedUrl}`,
+      })
+      .then((res) => {
+        console.log('success export');
+        console.log(res);
+      })
+      .catch((error) => {
+        console.log('error export');
+        console.log(error);
+        throw new functions.https.HttpsError('unknown', error);
+      });
+  });
