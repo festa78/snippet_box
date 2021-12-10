@@ -118,14 +118,20 @@ export const exportRssToStorage = functions.firestore
 export const bigQueryImportStorageTrigger = functions.storage
   .bucket(`${admin.installations().app.options.projectId}-firestore`)
   .object()
-  .onFinalize(async (object) => {
+  .onFinalize(async (object): Promise<string | null | undefined> => {
     const name = object.name!;
-    const matched = name.match(/all_namespaces_kind_(.+)\.export_metadata/);
+    const matched = name.match(
+      /rss_content_exports\/(.+)\/all_namespaces_kind_(.+)\.export_metadata/
+    );
     if (!matched) {
-      return console.log(`invalid object: ${name}`);
+      throw new functions.https.HttpsError(
+        'unknown',
+        `invalid object: ${name}`
+      );
     }
 
-    const collectionName = matched[1];
+    const collectionName = matched[1].split('/')[0];
+    console.log(`collection name ${collectionName}`);
     const auth = await google.auth.getClient({
       scopes: ['https://www.googleapis.com/auth/bigquery'],
     });
@@ -150,4 +156,5 @@ export const bigQueryImportStorageTrigger = functions.storage
     });
 
     console.log(result);
+    return result.data.jobReference?.jobId;
   });

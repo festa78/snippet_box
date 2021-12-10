@@ -65,20 +65,47 @@ describe('updateRssContentOnSchedule', () => {
   }).timeout(4000);
 });
 
-describe('exportRssForBigquery', () => {
-  it('exportRssToStorage', async () => {
+// This test depends on exportRssToStorage
+// and use the stored results under Storage.
+describe('ReadStorageForBigquery', () => {
+  it('Integration test', async () => {
+    // The target method only kick off the job and this tests
+    // only ensures it starts job correctly.
+    // TODO: also check if the bigquery job finished properly.
+    const wrapped = test.wrap(sut.bigQueryImportStorageTrigger);
+    const jobId = await wrapped({
+      name:
+        'rss_content_exports/dummyFeedUrl/' +
+        'all_namespaces/kind_dummyFeedUrl/' +
+        'all_namespaces_kind_dummyFeedUrl.export_metadata',
+    });
+    assert.isNotNull(jobId);
+    assert.isDefined(jobId);
+  });
+});
+
+// This should run after ReadStorageForBigquery
+// otherwise it needs to wait for the operation.
+describe('exportRssToStorage', () => {
+  it('Integration test', async () => {
     // NOTE: exportDocuments command used in the
     // exportRssToStorage method explicitly uses
     // real firestore and storage regardless of
     // emulators' availability.
     // Thus here we use the real firebase services
     // for test purpose.
+
+    // NOTE: This is just a dummy data for triggering method and will not
+    // be exported to Storage.
+    // Actual data to be exported should be already prepared in real
+    // Firestore.
+    const dummyData = {
+      title: 'dummy title',
+      content: 'dummy content',
+      pubDate: 'dummy pubDate',
+    };
     const snap = test.firestore.makeDocumentSnapshot(
-      {
-        title: 'dummy title',
-        content: 'dummy content',
-        pubDate: 'dummy pubDate',
-      },
+      dummyData,
       'rss_contents_store/rss_content/dummyFeedUrl/dummyItemLink'
     );
 
@@ -89,5 +116,5 @@ describe('exportRssForBigquery', () => {
         itemLinx: 'dummyItemLink',
       },
     });
-  });
+  }).timeout(4000);
 });
