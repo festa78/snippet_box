@@ -86,7 +86,7 @@ export const updateRssContentOnSchedule = functions.pubsub
   });
 
 export const exportRssToStorage = functions.firestore
-  .document('rss_contents_store/rss_content/{feedUrl}')
+  .document('rss_contents_store/rss_content/{feedUrl}/{itemLink}')
   .onWrite(async (snap, context) => {
     const auth = new admin.firestore.v1.FirestoreAdminClient();
     const projectId = admin.installations().app.options.projectId;
@@ -119,8 +119,8 @@ export const bigQueryImportStorageTrigger = functions.storage
   .bucket(`${admin.installations().app.options.projectId}-firestore`)
   .object()
   .onFinalize(async (object): Promise<string | null | undefined> => {
-    const name = object.name!;
-    const matched = name.match(
+    const name = object.name;
+    const matched = name?.match(
       /rss_content_exports\/(.+)\/all_namespaces_kind_(.+)\.export_metadata/
     );
     if (!matched) {
