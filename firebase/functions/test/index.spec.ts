@@ -65,56 +65,29 @@ describe('updateRssContentOnSchedule', () => {
   }).timeout(4000);
 });
 
-// This test depends on exportRssToStorage
-// and use the stored results under Storage.
-describe('ReadStorageForBigquery', () => {
+describe('exportRssToRecommendationAi', () => {
   it('Integration test', async () => {
-    // The target method only kick off the job and this tests
-    // only ensures it starts job correctly.
-    // TODO: also check if the bigquery job finished properly.
-    const wrapped = test.wrap(sut.bigQueryImportStorageTrigger);
-    const jobId = await wrapped({
-      name:
-        'rss_content_exports/dummyFeedUrl/' +
-        'all_namespaces/kind_dummyFeedUrl/' +
-        'all_namespaces_kind_dummyFeedUrl.export_metadata',
-    });
-    assert.isNotNull(jobId);
-    assert.isDefined(jobId);
-  });
-});
-
-// This should run after ReadStorageForBigquery
-// otherwise it needs to wait for the operation.
-describe('exportRssToStorage', () => {
-  it('Integration test', async () => {
-    // NOTE: exportDocuments command used in the
-    // exportRssToStorage method explicitly uses
-    // real firestore and storage regardless of
-    // emulators' availability.
-    // Thus here we use the real firebase services
-    // for test purpose.
-
-    // NOTE: This is just a dummy data for triggering method and will not
-    // be exported to Storage.
-    // Actual data to be exported should be already prepared in real
-    // Firestore.
     const dummyData = {
       title: 'dummy title',
       content: 'dummy content',
-      pubDate: 'dummy pubDate',
+      pubDate: '2020-01-01T03:33:33.000001Z',
     };
-    const snap = test.firestore.makeDocumentSnapshot(
+    const beforeSnap = test.firestore.makeDocumentSnapshot(
+      {},
+      'rss_contents_store/rss_content/dummyFeedUrl/dummyItemLink'
+    );
+    const afterSnap = test.firestore.makeDocumentSnapshot(
       dummyData,
       'rss_contents_store/rss_content/dummyFeedUrl/dummyItemLink'
     );
+    const change = test.makeChange(beforeSnap, afterSnap);
 
-    const wrapped = test.wrap(sut.exportRssToStorage);
-    await wrapped(snap, {
+    const wrapped = test.wrap(sut.exportRssToRecommendationAi);
+    await wrapped(change, {
       params: {
         feedUrl: 'dummyFeedUrl',
-        itemLinx: 'dummyItemLink',
+        itemLink: 'dummyItemLink',
       },
     });
-  }).timeout(4000);
+  });
 });
