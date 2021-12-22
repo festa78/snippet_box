@@ -1,6 +1,5 @@
 import * as admin from 'firebase-admin';
 import * as functions from 'firebase-functions';
-import { google } from 'googleapis';
 import fetch from 'node-fetch';
 import Parser from 'rss-parser';
 
@@ -66,7 +65,7 @@ export const updateRssContentOnSchedule = functions.pubsub
               return rssContent.items
                 .filter((rssItem) => rssItem.link != undefined)
                 .map((rssItem) => {
-                  var pubDate = rssItem.pubDate;
+                  let pubDate = rssItem.pubDate;
                   if (pubDate !== null && pubDate !== undefined) {
                     pubDate = new Date(pubDate).toISOString();
                   }
@@ -86,41 +85,5 @@ export const updateRssContentOnSchedule = functions.pubsub
                 });
             })
         );
-      });
-  });
-
-export const exportRssToRecommendationAi = functions.firestore
-  .document('rss_contents_store/rss_content/{feedUrl}/{itemLink}')
-  .onWrite(async (snap, context) => {
-    const productData = {
-      id: context.params.itemLink,
-      title: snap.after.data()?.title,
-      categories: context.params.feedUrl,
-      availableTime: snap.after.data()?.pubDate,
-    };
-
-    const auth = await google.auth.getClient({
-      scopes: ['https://www.googleapis.com/auth/cloud-platform'],
-    });
-
-    google
-      .retail('v2')
-      .projects.locations.catalogs.branches.products.import({
-        auth,
-        parent:
-          'projects/flutter-myapp-test/locations/global/catalogs/default_catalog/branches/default_branch',
-        requestBody: {
-          inputConfig: {
-            productInlineSource: {
-              products: [productData],
-            },
-          },
-        },
-      })
-      .then((res) => {
-        console.log(res);
-      })
-      .catch((error) => {
-        console.log(error);
       });
   });

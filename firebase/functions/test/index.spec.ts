@@ -64,30 +64,3 @@ describe('updateRssContentOnSchedule', () => {
     });
   }).timeout(4000);
 });
-
-describe('exportRssToRecommendationAi', () => {
-  it('Integration test', async () => {
-    const dummyData = {
-      title: 'dummy title',
-      content: 'dummy content',
-      pubDate: '2020-01-01T03:33:33.000001Z',
-    };
-    const beforeSnap = test.firestore.makeDocumentSnapshot(
-      {},
-      'rss_contents_store/rss_content/dummyFeedUrl/dummyItemLink'
-    );
-    const afterSnap = test.firestore.makeDocumentSnapshot(
-      dummyData,
-      'rss_contents_store/rss_content/dummyFeedUrl/dummyItemLink'
-    );
-    const change = test.makeChange(beforeSnap, afterSnap);
-
-    const wrapped = test.wrap(sut.exportRssToRecommendationAi);
-    await wrapped(change, {
-      params: {
-        feedUrl: 'dummyFeedUrl',
-        itemLink: 'dummyItemLink',
-      },
-    });
-  });
-});
