@@ -65,19 +65,21 @@ export const updateRssContentOnSchedule = functions.pubsub
               return rssContent.items
                 .filter((rssItem) => rssItem.link != undefined)
                 .map((rssItem) => {
-                  let pubDate = rssItem.pubDate;
-                  if (pubDate !== null && pubDate !== undefined) {
-                    pubDate = new Date(pubDate).toISOString();
-                  }
                   return (
                     uriCollectionRef
                       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
                       .doc(rssItem.link!.replace(/\//g, '_'))
                       .set(
                         {
-                          title: rssItem.title,
-                          content: rssItem.content,
-                          pubDate: pubDate,
+                          title: rssItem.title ?? null,
+                          link: rssItem.link ?? null,
+                          pubDate: rssItem.pubDate ?? null,
+                          creator: rssItem.creator ?? null,
+                          content: rssItem.content ?? null,
+                          contentSnippet: rssItem.contentSnippet ?? null,
+                          guid: rssItem.guid ?? null,
+                          categories: rssItem.categories ?? null,
+                          isoDate: rssItem.isoDate ?? null,
                         },
                         { merge: true }
                       )
