@@ -65,6 +65,16 @@ export const updateRssContentOnSchedule = functions.pubsub
               return rssContent.items
                 .filter((rssItem) => rssItem.link != undefined)
                 .map((rssItem) => {
+                  console.log(`${rssItem.title} parsed to`);
+                  const titleTermFrequency: { [key: string]: number } = {};
+                  rssItem.title?.match(/\b(\w+)\b/g)?.forEach((term) => {
+                    if (term in titleTermFrequency) {
+                      titleTermFrequency[term] += 1;
+                    } else {
+                      titleTermFrequency[term] = 1;
+                    }
+                  });
+
                   return (
                     uriCollectionRef
                       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -77,6 +87,7 @@ export const updateRssContentOnSchedule = functions.pubsub
                           creator: rssItem.creator ?? null,
                           content: rssItem.content ?? null,
                           contentSnippet: rssItem.contentSnippet ?? null,
+                          titleTermFrequency: titleTermFrequency,
                           guid: rssItem.guid ?? null,
                           categories: rssItem.categories ?? null,
                           isoDate: rssItem.isoDate ?? null,
