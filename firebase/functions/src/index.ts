@@ -1,6 +1,7 @@
 import * as admin from 'firebase-admin';
 import * as functions from 'firebase-functions';
 import fetch from 'node-fetch';
+import { BigQuery } from '@google-cloud/bigquery';
 import Parser from 'rss-parser';
 
 admin.initializeApp();
@@ -54,18 +55,9 @@ export const updateRssContentOnSchedule = functions.pubsub
           rssContents
             .filter((rssContent) => rssContent.feedUrl != undefined)
             .flatMap((rssContent) => {
-              // Index name does not accept a slash.
-              const uriCollectionRef = admin
-                .firestore()
-                .collection('rss_contents_store')
-                .doc('rss_content')
-                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                .collection(rssContent.feedUrl!.replace(/\//g, '_'));
-
               return rssContent.items
                 .filter((rssItem) => rssItem.link != undefined)
                 .map((rssItem) => {
-                  console.log(`${rssItem.title} parsed to`);
                   const titleTermFrequency: { [key: string]: number } = {};
                   rssItem.title?.match(/\b(\w+)\b/g)?.forEach((term) => {
                     if (term in titleTermFrequency) {
@@ -75,26 +67,32 @@ export const updateRssContentOnSchedule = functions.pubsub
                     }
                   });
 
-                  return (
-                    uriCollectionRef
-                      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                      .doc(rssItem.link!.replace(/\//g, '_'))
-                      .set(
-                        {
-                          title: rssItem.title ?? null,
-                          link: rssItem.link ?? null,
-                          pubDate: rssItem.pubDate ?? null,
-                          creator: rssItem.creator ?? null,
-                          content: rssItem.content ?? null,
-                          contentSnippet: rssItem.contentSnippet ?? null,
-                          titleTermFrequency: titleTermFrequency,
-                          guid: rssItem.guid ?? null,
-                          categories: rssItem.categories ?? null,
-                          isoDate: rssItem.isoDate ?? null,
-                        },
-                        { merge: true }
-                      )
-                  );
+                  const bigQuery = new BigQuery();
+
+                  return bigQuery
+                    .dataset('rss_contents_store')
+                    .table('rss-items')
+                    .insert({
+                      title: rssItem.title ?? null,
+                      link: rssItem.link ?? null,
+                      pubDate: rssItem.pubDate ?? null,
+                      creator: rssItem.creator ?? null,
+                      content: rssItem.content ?? null,
+                      contentSnippet: rssItem.contentSnippet ?? null,
+                      guid: rssItem.guid ?? null,
+                      isoDate: rssItem.isoDate ?? null,
+                    })
+                    .catch((error) => {
+                      console.log(error);
+                      if (error.name === 'PartialFailureError') {
+                        for (const err of error.errors as {
+                          errors: { message: string; reason: string }[];
+                          row: any;
+                        }[]) {
+                          console.log(err);
+                        }
+                      }
+                    });
                 });
             })
         );
