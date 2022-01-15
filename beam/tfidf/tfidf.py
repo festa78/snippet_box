@@ -30,7 +30,7 @@ from os import pipe
 import re
 
 import apache_beam as beam
-from apache_beam.io import ReadFromText, ReadFromBigQuery
+from apache_beam.io import ReadFromText, ReadFromBigQuery, WriteToBigQuery
 from apache_beam.io import WriteToText
 from apache_beam.options.pipeline_options import PipelineOptions
 from apache_beam.options.pipeline_options import SetupOptions
@@ -67,6 +67,27 @@ def read_text_documents(pipeline, uris):
         | 'Read: %s' % uri >> ReadFromText(uri)
         | 'WithKey: %s' % uri >> beam.Map(lambda v, uri: (uri, v), uri))
   return pcolls | 'FlattenReadPColls' >> beam.Flatten()
+
+
+def write_to_destination(pipeline, do_write_to_bq, local_output_path=None):
+  """Write the results from pipeline to destinations which are bigquery
+  and local path.
+  """
+
+  if isinstance(do_write_to_bq, bool) and do_write_to_bq:
+    TABLE_SPEC = 'flutter-myapp-test:rss_contents_store.tf-idf'
+    TABLE_SCHEMA = 'word:STRING, uri:STRING, tfidf:FLOAT'
+    
+    (pipeline
+      | "Write to Big Query" >> WriteToBigQuery(
+        TABLE_SPEC,
+        schema=TABLE_SCHEMA,
+        write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE,
+        create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED))
+
+  if local_output_path:
+    pipeline | "Write to local file" >> WriteToText(local_output_path)
+
 
 
 class TfIdf(beam.PTransform):
@@ -205,14 +226,33 @@ class TfIdf(beam.PTransform):
         word_to_uri_and_tf_and_df
         | 'ComputeTf-idf' >> beam.FlatMap(compute_tf_idf))
 
-    return word_to_uri_and_tfidf
+    def transform_to_bq_schema(word_uri_and_tfidf):
+      """Transform from word_uri_and_tfidf to BQ query schema"""
+      (word, uri_and_tfidf) = word_uri_and_tfidf
+      yield {
+        'word': word,
+        'uri': uri_and_tfidf[0],
+        'tfidf': uri_and_tfidf[1],
+      }
+
+    bq_schema_data = ( 
+      word_to_uri_and_tfidf | 'Transform to BigQuery schema' >> beam.FlatMap(
+        transform_to_bq_schema)
+    )
+
+    return bq_schema_data
 
 
 def run(argv=None, save_main_session=True):
   """Main entry point; defines and runs the tfidf pipeline."""
   parser = argparse.ArgumentParser()
   parser.add_argument(
-      '--output', required=True, help='Output file to write results to.')
+      '--do_save_to_bq', action='store_true',
+      help='If set it will store tfidf output to BigQuery table.')
+  parser.add_argument(
+      '--output', required=False, default=None,
+      help='If not None, output file to write results to.'
+        'Mainly for test purpose. Defaults to None')
   parser.add_argument('--uris', required=False,
       default=None, help='URIs to process. Accept glob expression. '
       'Used mainly for testing. If not specified, it will read from bigquery. Defaults to None.')
@@ -230,7 +270,8 @@ def run(argv=None, save_main_session=True):
     output = pcoll | TfIdf()
     # Write the output using a "Write" transform that has side effects.
     # pylint: disable=expression-not-assigned
-    output | 'write' >> WriteToText(known_args.output)
+    write_to_destination(output, known_args.do_save_to_bq,
+      known_args.output)
     # Execute the pipeline and wait until it is completed.
 
 
