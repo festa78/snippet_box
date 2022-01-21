@@ -19,21 +19,14 @@
 
 # pytype: skip-file
 
-import ast
 import logging
-import os
-import re
-import tempfile
 import unittest
 from unittest import mock
-
-import pytest
 
 import apache_beam as beam
 from apache_beam.testing.test_pipeline import TestPipeline
 from apache_beam.testing.util import assert_that
 from apache_beam.testing.util import equal_to
-from apache_beam.testing.util import open_shards
 
 import tfidf
 
@@ -67,29 +60,6 @@ class TfIdfTest(unittest.TestCase):
       # To actually trigger the check the pipeline must be run (e.g. by
       # exiting the with context).
 
-  def test_basics(self):
-    # Setup the files with expected content.
-    temp_folder = tempfile.mkdtemp()
-    self.create_file(os.path.join(temp_folder, '1.txt'), 'abc def ghi')
-    self.create_file(os.path.join(temp_folder, '2.txt'), 'abc def')
-    self.create_file(os.path.join(temp_folder, '3.txt'), 'abc')
-    tfidf.run([
-        '--uris=%s/*' % temp_folder,
-        '--output',
-        os.path.join(temp_folder, 'result')
-    ],
-              save_main_session=False)
-    # Parse result file and compare.
-    results = []
-    with open_shards(os.path.join(temp_folder, 'result-*-of-*')) as result_file:
-      for line in result_file:
-        result_dict = ast.literal_eval(line)
-        result_dict['uri'] = os.path.basename(result_dict['uri'])
-        results.append(
-          (result_dict['word'], result_dict['uri'], result_dict['tfidf']))
-    logging.info('Computed results: %s', set(results))
-    self.assertEqual(set(results), EXPECTED_RESULTS)
-
   @mock.patch('tfidf.ReadFromBigQuery')
   def test_read_bigquery_documents(self, mock_read_from_bigquery):
     EXPECTED_RESULTS_BIGQUERY = set([
@@ -109,28 +79,11 @@ class TfIdfTest(unittest.TestCase):
       assert_that(tfidf.read_bigquery_documents(p),
         equal_to(EXPECTED_RESULTS_BIGQUERY))
 
-  @mock.patch('tfidf.WriteToText')
   @mock.patch('tfidf.WriteToBigQuery')
-  def test_write_to_destination(self, mock_write_to_bigquery, mock_write_to_text):
-    for do_write_to_bq in (True, False):
-      for local_output_path in ('out.txt', None):
-        print((do_write_to_bq, local_output_path))
-        with TestPipeline() as p:
-          tfidf.write_to_destination(p, do_write_to_bq, local_output_path)
-          
-          if do_write_to_bq:
-            mock_write_to_bigquery.assert_called_once()
-          else:
-            mock_write_to_bigquery.assert_not_called()
-
-          if local_output_path:
-            mock_write_to_text.assert_called_once()
-          else:
-            mock_write_to_text.assert_not_called()
-
-          mock_write_to_bigquery.reset_mock()
-          mock_write_to_text.reset_mock()
-
+  def test_write_to_destination(self, mock_write_to_bigquery):
+    with TestPipeline() as p:
+      tfidf.write_to_destination(p)
+      mock_write_to_bigquery.assert_called_once()
 
 if __name__ == '__main__':
   logging.getLogger().setLevel(logging.INFO)

@@ -23,25 +23,20 @@ http://en.wikipedia.org/wiki/Tf-idf
 
 # pytype: skip-file
 
-import argparse
-import glob
 import math
 from os import pipe
 import re
 
 import apache_beam as beam
-from apache_beam.io import ReadFromText, ReadFromBigQuery, WriteToBigQuery
-from apache_beam.io import WriteToText
+from apache_beam.io import ReadFromBigQuery, WriteToBigQuery
 from apache_beam.options.pipeline_options import PipelineOptions
 from apache_beam.options.pipeline_options import SetupOptions
 from apache_beam.pvalue import AsSingleton
 
 
-def read_documents(pipeline, uris=None):
+def read_documents(pipeline):
   """Read the documents at the provided uris and returns (uri, line) pairs."""
-  if not uris:
-    return read_bigquery_documents(pipeline)
-  return read_text_documents(pipeline, uris)
+  return read_bigquery_documents(pipeline)
 
 def read_bigquery_documents(pipeline):
   """Read the documents from bigquery and returns (uri, line) pairs."""
@@ -58,36 +53,18 @@ def read_bigquery_documents(pipeline):
     | 'WithPair (link, title)' >> beam.Map(lambda v: (v['link'], v['title']))
   )
 
-def read_text_documents(pipeline, uris):
-  """Read the documents at the provided uris and returns (uri, line) pairs."""
-  pcolls = []
-  for uri in uris:
-    pcolls.append(
-        pipeline
-        | 'Read: %s' % uri >> ReadFromText(uri)
-        | 'WithKey: %s' % uri >> beam.Map(lambda v, uri: (uri, v), uri))
-  return pcolls | 'FlattenReadPColls' >> beam.Flatten()
-
-
-def write_to_destination(pipeline, do_write_to_bq, local_output_path=None):
-  """Write the results from pipeline to destinations which are bigquery
-  and local path.
+def write_to_destination(pipeline):
+  """Write the results from pipeline to destinations.
   """
-
-  if isinstance(do_write_to_bq, bool) and do_write_to_bq:
-    TABLE_SPEC = 'flutter-myapp-test:rss_contents_store.tf-idf'
-    TABLE_SCHEMA = 'word:STRING, uri:STRING, tfidf:FLOAT'
-    
-    (pipeline
-      | "Write to Big Query" >> WriteToBigQuery(
-        TABLE_SPEC,
-        schema=TABLE_SCHEMA,
-        write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE,
-        create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED))
-
-  if local_output_path:
-    pipeline | "Write to local file" >> WriteToText(local_output_path)
-
+  TABLE_SPEC = 'flutter-myapp-test:rss_contents_store.tf-idf'
+  TABLE_SCHEMA = 'word:STRING, uri:STRING, tfidf:FLOAT'
+  
+  (pipeline
+    | "Write to Big Query" >> WriteToBigQuery(
+      TABLE_SPEC,
+      schema=TABLE_SCHEMA,
+      write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE,
+      create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED))
 
 
 class TfIdf(beam.PTransform):
@@ -242,36 +219,20 @@ class TfIdf(beam.PTransform):
 
     return bq_schema_data
 
-
 def run(argv=None, save_main_session=True):
   """Main entry point; defines and runs the tfidf pipeline."""
-  parser = argparse.ArgumentParser()
-  parser.add_argument(
-      '--do_save_to_bq', action='store_true',
-      help='If set it will store tfidf output to BigQuery table.')
-  parser.add_argument(
-      '--output', required=False, default=None,
-      help='If not None, output file to write results to.'
-        'Mainly for test purpose. Defaults to None')
-  parser.add_argument('--uris', required=False,
-      default=None, help='URIs to process. Accept glob expression. '
-      'Used mainly for testing. If not specified, it will read from bigquery. Defaults to None.')
-  known_args, pipeline_args = parser.parse_known_args(argv)
-
   # We use the save_main_session option because one or more DoFn's in this
   # workflow rely on global context (e.g., a module imported at module level).
-  pipeline_options = PipelineOptions(pipeline_args)
+  pipeline_options = PipelineOptions(argv)
   pipeline_options.view_as(SetupOptions).save_main_session = save_main_session
   with beam.Pipeline(options=pipeline_options) as p:
-
     # Read documents specified by the uris command line option.
-    pcoll = read_documents(p, glob.glob(known_args.uris) if known_args.uris else None)
+    pcoll = read_documents(p)
     # Compute TF-IDF information for each word.
     output = pcoll | TfIdf()
     # Write the output using a "Write" transform that has side effects.
     # pylint: disable=expression-not-assigned
-    write_to_destination(output, known_args.do_save_to_bq,
-      known_args.output)
+    write_to_destination(output)
     # Execute the pipeline and wait until it is completed.
 
 
