@@ -29,42 +29,7 @@ import re
 
 import apache_beam as beam
 from apache_beam.io import ReadFromBigQuery, WriteToBigQuery
-from apache_beam.options.pipeline_options import PipelineOptions
-from apache_beam.options.pipeline_options import SetupOptions
 from apache_beam.pvalue import AsSingleton
-
-
-def read_documents(pipeline):
-  """Read the documents at the provided uris and returns (uri, line) pairs."""
-  return read_bigquery_documents(pipeline)
-
-def read_bigquery_documents(pipeline):
-  """Read the documents from bigquery and returns (uri, line) pairs."""
-  # TODO: insert project id by value.
-  QUERY = '''
-  SELECT DISTINCT title,link
-  FROM `flutter-myapp-test.rss_contents_store.rss-items`
-  LIMIT 1000
-  '''
-
-  return (
-    pipeline
-    | 'ReadTable' >> ReadFromBigQuery(query=QUERY, use_standard_sql=True)
-    | 'WithPair (link, title)' >> beam.Map(lambda v: (v['link'], v['title']))
-  )
-
-def write_to_destination(pipeline):
-  """Write the results from pipeline to destinations.
-  """
-  TABLE_SPEC = 'flutter-myapp-test:rss_contents_store.tf-idf'
-  TABLE_SCHEMA = 'word:STRING, uri:STRING, tfidf:FLOAT'
-  
-  (pipeline
-    | "Write to Big Query" >> WriteToBigQuery(
-      TABLE_SPEC,
-      schema=TABLE_SCHEMA,
-      write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE,
-      create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED))
 
 
 class TfIdf(beam.PTransform):
@@ -204,41 +169,3 @@ class TfIdf(beam.PTransform):
         | 'ComputeTf-idf' >> beam.FlatMap(compute_tf_idf))
 
     return word_to_uri_and_tfidf
-
-class TransformToOutputSchema(beam.PTransform):
-  """Convert data to output schema."""
-  def expand(self, word_uri_and_tfidf):
-    def transform_to_bq_schema(word_uri_and_tfidf):
-      """Transform from word_uri_and_tfidf to BQ query schema"""
-      (word, uri_and_tfidf) = word_uri_and_tfidf
-      yield {
-        'word': word,
-        'uri': uri_and_tfidf[0],
-        'tfidf': uri_and_tfidf[1],
-      }
-
-    return ( 
-      word_uri_and_tfidf | 'Transform to BigQuery schema' >> beam.FlatMap(
-        transform_to_bq_schema)
-    )
-
-
-def run(argv=None, save_main_session=True):
-  """Main entry point; defines and runs the tfidf pipeline."""
-  # We use the save_main_session option because one or more DoFn's in this
-  # workflow rely on global context (e.g., a module imported at module level).
-  pipeline_options = PipelineOptions(argv)
-  pipeline_options.view_as(SetupOptions).save_main_session = save_main_session
-  with beam.Pipeline(options=pipeline_options) as p:
-    # Read documents specified by the uris command line option.
-    pcoll = read_documents(p)
-    # Compute TF-IDF information for each word.
-    word_to_uri_and_tfidf = pcoll | TfIdf()
-    # Write the output using a "Write" transform that has side effects.
-    bq_schema_data = word_to_uri_and_tfidf | TransformToOutputSchema()
-    write_to_destination(bq_schema_data)
-    # Execute the pipeline and wait until it is completed.
-
-
-if __name__ == '__main__':
-  run()
