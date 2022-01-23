@@ -47,16 +47,16 @@ class TfIdfTest(unittest.TestCase):
   def test_tfidf_transform(self):
     with TestPipeline() as p:
 
-      def re_key(bq_schema_data):
+      def re_key(word_uri_and_tfidf):
+        (word, uri_and_tfidf) = word_uri_and_tfidf
         return (
-          bq_schema_data['word'], bq_schema_data['uri'], bq_schema_data['tfidf'])
+          word, uri_and_tfidf[0], uri_and_tfidf[1])
 
       uri_to_line = p | 'create sample' >> beam.Create(
           [('1.txt', 'abc def ghi'), ('2.txt', 'abc def'), ('3.txt', 'abc')])
       result = (
         uri_to_line |
         tfidf.TfIdf() |
-        tfidf.TransformToOutputSchema() |
         beam.Map(re_key))
       assert_that(result, equal_to(EXPECTED_RESULTS))
       # Run the pipeline. Note that the assert_that above adds to the pipeline
