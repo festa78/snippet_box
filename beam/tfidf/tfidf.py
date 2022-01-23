@@ -203,6 +203,11 @@ class TfIdf(beam.PTransform):
         word_to_uri_and_tf_and_df
         | 'ComputeTf-idf' >> beam.FlatMap(compute_tf_idf))
 
+    return word_to_uri_and_tfidf
+
+class TransformToOutputSchema(beam.PTransform):
+  """Convert data to output schema."""
+  def expand(self, word_uri_and_tfidf):
     def transform_to_bq_schema(word_uri_and_tfidf):
       """Transform from word_uri_and_tfidf to BQ query schema"""
       (word, uri_and_tfidf) = word_uri_and_tfidf
@@ -212,12 +217,11 @@ class TfIdf(beam.PTransform):
         'tfidf': uri_and_tfidf[1],
       }
 
-    bq_schema_data = ( 
-      word_to_uri_and_tfidf | 'Transform to BigQuery schema' >> beam.FlatMap(
+    return ( 
+      word_uri_and_tfidf | 'Transform to BigQuery schema' >> beam.FlatMap(
         transform_to_bq_schema)
     )
 
-    return bq_schema_data
 
 def run(argv=None, save_main_session=True):
   """Main entry point; defines and runs the tfidf pipeline."""
@@ -229,10 +233,10 @@ def run(argv=None, save_main_session=True):
     # Read documents specified by the uris command line option.
     pcoll = read_documents(p)
     # Compute TF-IDF information for each word.
-    output = pcoll | TfIdf()
+    word_to_uri_and_tfidf = pcoll | TfIdf()
     # Write the output using a "Write" transform that has side effects.
-    # pylint: disable=expression-not-assigned
-    write_to_destination(output)
+    bq_schema_data = word_to_uri_and_tfidf | TransformToOutputSchema()
+    write_to_destination(bq_schema_data)
     # Execute the pipeline and wait until it is completed.
 
 
