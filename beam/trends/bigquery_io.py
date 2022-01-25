@@ -4,6 +4,7 @@
 import apache_beam as beam
 from apache_beam.io import ReadFromBigQuery, WriteToBigQuery
 
+
 def read_rss_items(pipeline):
   """Read the documents from bigquery and returns (uri, line) pairs."""
   # TODO: insert project id by value.
@@ -19,13 +20,33 @@ def read_rss_items(pipeline):
     | 'WithPair (link, title)' >> beam.Map(lambda v: (v['link'], v['title']))
   )
 
-def write_word_uri_tfidf(pipeline):
-  """Write the results from pipeline to destinations.
+
+class TransformWordUriTfidfToBqSchema(beam.PTransform):
+  """Convert (word, (uri, tfidf)) elements to bq table format."""
+  def expand(self, word_uri_and_tfidf):
+    def transform_to_bq_schema(word_uri_and_tfidf):
+      """Transform from word_uri_and_tfidf to BQ query schema"""
+      (word, uri_and_tfidf) = word_uri_and_tfidf
+      yield {
+        'word': word,
+        'uri': uri_and_tfidf[0],
+        'tfidf': uri_and_tfidf[1],
+      }
+
+    return ( 
+      word_uri_and_tfidf | 'Transform to BigQuery schema' >> beam.FlatMap(
+        transform_to_bq_schema)
+    )
+
+
+def write_word_to_uri_and_tfidf(pipeline):
+  """Write the TFIDF results from pipeline to destinations.
   """
   TABLE_SPEC = 'flutter-myapp-test:rss_contents_store.tf-idf'
   TABLE_SCHEMA = 'word:STRING, uri:STRING, tfidf:FLOAT'
   
   (pipeline
+    | "Transform to BQ schema" >> TransformWordUriTfidfToBqSchema()
     | "Write to Big Query" >> WriteToBigQuery(
       TABLE_SPEC,
       schema=TABLE_SCHEMA,

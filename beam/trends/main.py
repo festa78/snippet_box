@@ -7,7 +7,6 @@ from apache_beam.options.pipeline_options import PipelineOptions
 from apache_beam.options.pipeline_options import SetupOptions
 
 import bigquery_io
-import schema_transform
 import tfidf
 
 def run(argv=None, save_main_session=True):
@@ -22,10 +21,7 @@ def run(argv=None, save_main_session=True):
     # Compute TF-IDF information for each word.
     word_to_uri_and_tfidf = pcoll | tfidf.TfIdf()
     # Write the output using a "Write" transform that has side effects.
-    bq_schema_data = (
-        word_to_uri_and_tfidf |
-        schema_transform.TransformWordUriTfidfToBqSchema())
-    bigquery_io.write_word_uri_tfidf(bq_schema_data)
+    bigquery_io.write_word_to_uri_and_tfidf(word_to_uri_and_tfidf)
     # Execute the pipeline and wait until it is completed.
 
 
