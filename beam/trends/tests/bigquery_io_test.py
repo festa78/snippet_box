@@ -11,7 +11,7 @@ from apache_beam.testing.test_pipeline import TestPipeline
 from apache_beam.testing.util import assert_that
 from apache_beam.testing.util import equal_to
 
-import bigquery_io
+from trends import bigquery_io
 
 EXPECTED_RESULTS = set([
     ('ghi', '1.txt', 0.3662040962227032), ('abc', '1.txt', 0.0),
@@ -22,7 +22,7 @@ EXPECTED_RESULTS = set([
 EXPECTED_LINE_RE = r'\(u?\'([a-z]*)\', \(\'.*([0-9]\.txt)\', (.*)\)\)'
 
 class BigQueryIoTest(unittest.TestCase):
-  @mock.patch('bigquery_io.ReadFromBigQuery')
+  @mock.patch('trends.bigquery_io.ReadFromBigQuery')
   def test_read_bigquery_documents(self, mock_read_from_bigquery):
     EXPECTED_RESULTS_BIGQUERY = set([
         ('1.com', 'abc def ghi'),

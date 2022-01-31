@@ -185,12 +185,6 @@ class TfidfVector(beam.PTransform):
       (word, uri_and_tfidf) = word_uri_and_tfidf
       return (uri_and_tfidf[0], (word, uri_and_tfidf[1]))
 
-    uri_word_and_tfidf = (
-      word_uri_and_tfidf
-      | 'Uri to WordTfidf map' >> beam.Map(transform_to_uri_word_and_tfidf)
-      | 'Group by uri' >> beam.GroupByKey()
-    )
-
     def transform_to_vector_repr(uri_word_and_tfidf_list, unique_words):
       """Form a vector whose element represents each unique word and
       its tf-idf.
@@ -204,18 +198,23 @@ class TfidfVector(beam.PTransform):
 
       return (uri, tfidf_vector)
 
-    # NOTE: unique_words are not sorted.
-    # Does not matter unless we incrementally update the KDE values.
-    unique_words = (
+    return (
       word_uri_and_tfidf
-      | 'Get word list' >> beam.Keys()
-      | 'Get unique words' >> beam.Distinct()
-    )
-
-    tfidf_vector = (
-      uri_word_and_tfidf
+      | 'Uri to WordTfidf map' >> beam.Map(transform_to_uri_word_and_tfidf)
+      | 'Group by uri' >> beam.GroupByKey()
       | 'Compute tfidf vector by unique words' >> beam.Map(
-        transform_to_vector_repr, AsIter(unique_words))
+        transform_to_vector_repr, AsIter(
+          get_unique_words_from_word_uri_and_tfidf(
+            word_uri_and_tfidf
+          )
+        ))
     )
 
-    return tfidf_vector
+def get_unique_words_from_word_uri_and_tfidf(word_uri_and_tfidf):
+  # NOTE: unique_words are not sorted.
+  # Does not matter unless we incrementally update the KDE values.
+  return (
+    word_uri_and_tfidf
+    | 'Get word list' >> beam.Keys()
+    | 'Get unique words' >> beam.Distinct()
+  )

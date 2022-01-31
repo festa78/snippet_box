@@ -27,7 +27,7 @@ from apache_beam.testing.test_pipeline import TestPipeline
 from apache_beam.testing.util import assert_that
 from apache_beam.testing.util import equal_to
 
-import tfidf
+from trends import tfidf
 
 EXPECTED_RESULTS = set([
     ('ghi', '1.txt', 0.3662040962227032), ('abc', '1.txt', 0.0),

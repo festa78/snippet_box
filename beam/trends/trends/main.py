@@ -6,8 +6,7 @@ import apache_beam as beam
 from apache_beam.options.pipeline_options import PipelineOptions
 from apache_beam.options.pipeline_options import SetupOptions
 
-import bigquery_io
-import tfidf
+from trends import bigquery_io, tfidf
 
 def run(argv=None, save_main_session=True):
   """Main entry point; defines and runs the tfidf pipeline."""

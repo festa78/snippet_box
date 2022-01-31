@@ -45,3 +45,9 @@ app.*.map.json
 
 # Firebase config
 firebase-config.js
+
+# credentials
+**/flutter-myapp-*.json
+
+# Python related
+**/*.egg-info
