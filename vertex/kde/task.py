@@ -15,7 +15,7 @@ class TfidfBqTable:
   """
 
   def __init__(self):
-    self.data = bigquery.Client().query(self.QUERY)
+    self.data = bigquery.Client(project="flutter-myapp-test").query(self.QUERY)
 
   def unique_words(self):
     return sorted(
@@ -91,9 +91,9 @@ class TrendScoreBqTable:
 
   def write(self):
     # Avoid load_table_from_dataframe as it requires pyarrow.
-    job = bigquery.Client().load_table_from_json(
+    job = bigquery.Client(project="flutter-myapp-test").load_table_from_json(
       self.input_data_as_bq_schema_json(),
-      bigquery.Client().dataset("rss_contents_store").table("trend-scores"),
+      bigquery.Client(project="flutter-myapp-test").dataset("rss_contents_store").table("trend-scores"),
       job_config=bigquery.LoadJobConfig(
         schema=[
           bigquery.SchemaField("uri", "STRING"),

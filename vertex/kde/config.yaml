@@ -3,4 +3,4 @@ workerPoolSpecs:
     machineType: e2-standard-4
   replicaCount: 1
   containerSpec:
-    imageUri: asia-northeast3-docker.pkg.dev/flutter-myapp-test/kde-for-trend-scores/kde-for-trend-scores:0.0.1
+    imageUri: asia.gcr.io/flutter-myapp-test/kde-for-trend-scores:0.0.1
