@@ -2,7 +2,7 @@
 
 from collections import defaultdict
 
-from google.cloud import bigquery
+from google.cloud import bigquery, firestore
 from sklearn import decomposition, model_selection, neighbors, preprocessing
 import numpy as np
 import pandas as pd
@@ -79,7 +79,7 @@ class Kde:
         pca_input).score_samples(pca_input)
 
 
-class TrendScoreBqTable:
+class TrendScoreFirestore:
   def __init__(self, input_data):
     self.input_data = input_data
 
@@ -90,21 +90,11 @@ class TrendScoreBqTable:
     ]
 
   def write(self):
-    # Avoid load_table_from_dataframe as it requires pyarrow.
-    job = bigquery.Client(project="flutter-myapp-test").load_table_from_json(
-      self.input_data_as_bq_schema_json(),
-      bigquery.Client(project="flutter-myapp-test").dataset("rss_contents_store").table("trend-scores"),
-      job_config=bigquery.LoadJobConfig(
-        schema=[
-          bigquery.SchemaField("uri", "STRING"),
-          bigquery.SchemaField("trend_score", "FLOAT"),
-        ],
-        write_disposition=bigquery.job.WriteDisposition.WRITE_TRUNCATE,
-      ),
-    )
-    result = job.result()
-    if result.errors:
-      raise RuntimeError(result.errors)
+    collection_ref = firestore.Client(project="flutter-myapp-test").collection(
+      "rss_trend_scores")
+    for _, row in self.input_data.reset_index().iterrows():
+      collection_ref.document(row["uri"].replace('/', '_')
+        ).set({"trend_score": row["trend_score"]})
 
 
 if __name__ == '__main__':
@@ -123,4 +113,4 @@ if __name__ == '__main__':
     columns=["uri", "trend_score"],
   ).sort_values(by="trend_score")
 
-  TrendScoreBqTable(scores_pd).write()
+  TrendScoreFirestore(scores_pd).write()
