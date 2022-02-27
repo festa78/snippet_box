@@ -13,13 +13,6 @@ void main() {
     FirebaseFirestore.instance
         .useFirestoreEmulator('localhost', int.parse(firestoreEmulatorHost));
   }
-  const functionsEmulatorHost =
-      String.fromEnvironment('FUNCTIONS_EMULATOR_HOST', defaultValue: null);
-  if (functionsEmulatorHost != null) {
-    print('useFunctionsEmulator');
-    FirebaseFunctions.instance
-        .useFunctionsEmulator('localhost', int.parse(functionsEmulatorHost));
-  }
 
   runApp(SnippetBox());
 }
