@@ -7,13 +7,13 @@ import { describe, it } from 'mocha';
 import * as sut from '../src/index';
 
 process.env.FIRESTORE_EMULATOR_HOST = 'localhost:8080';
-process.env.GOOGLE_APPLICATION_CREDENTIALS = './flutter-myapp-test.json';
+process.env.GOOGLE_APPLICATION_CREDENTIALS = '../../../flutter-myapp-test.json';
 
 const test = firebaseFunctionsTest(
   {
     projectId: 'flutter-myapp-test',
   },
-  './test/flutter-myapp-test.json'
+  '../../flutter-myapp-test.json'
 );
 
 describe('getRssContent', () => {
@@ -62,5 +62,5 @@ describe('updateRssContentOnSchedule', () => {
     ).then((docs) => {
       return Promise.all(docs.map((doc) => expect(doc.length > 0)));
     });
-  }).timeout(4000);
+  }).timeout(8000);
 });

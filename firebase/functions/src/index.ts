@@ -81,6 +81,7 @@ export const updateRssContentOnSchedule = functions.pubsub
                       contentSnippet: rssItem.contentSnippet ?? null,
                       guid: rssItem.guid ?? null,
                       isoDate: rssItem.isoDate ?? null,
+                      feedUrl: rssContent.feedUrl ?? null,
                     })
                     .catch((error) => {
                       console.log(error);
