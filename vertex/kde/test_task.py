@@ -4,6 +4,7 @@ import unittest
 from unittest import mock
 
 import numpy as np
+import pandas as pd
 
 import task
 
@@ -132,6 +133,58 @@ class TestTfidfBqTable(unittest.TestCase):
                 [0., 0., 0., 2., 0.],
                 [0., 4., 0., 0., 0.],
             ]))
+
+
+class TestKde(unittest.TestCase):
+
+    def test_integration(self):
+        input_data = np.random.randn(20, 100)
+        task.Kde(input_data).score_samples(
+            task.Kde(input_data).grid_search_bandwidth())
+
+
+class TestTrendScoreFirestore(unittest.TestCase):
+
+    @mock.patch("task.firestore")
+    def test_write_exist(self, mock_firestore):
+        sut = task.TrendScoreFirestore(
+            pd.DataFrame(
+                np.array([
+                    ["http://aaa/bbb.com", "aaa/bbb/ccc.rss", 1.],
+                ]),
+                columns=["uri", "feed_url", "trend_score"],
+            ))
+
+        mock_feed_url_collection = mock_firestore.Client.return_value.collection.return_value.document.return_value.collection
+        mock_uri_document = mock_feed_url_collection.return_value.document
+        mock_uri_ref = mock_uri_document.return_value
+        mock_uri_ref.get.return_value.exists = True
+
+        sut.write()
+        mock_feed_url_collection.assert_called_once_with("aaa_bbb_ccc.rss")
+        mock_uri_document.assert_called_once_with("http:__aaa_bbb.com")
+        mock_uri_ref.set.assert_called()
+
+    @mock.patch("task.firestore")
+    def test_write_non_exist(self, mock_firestore):
+        sut = task.TrendScoreFirestore(
+            pd.DataFrame(
+                np.array([
+                    ["http://aaa/bbb.com", "aaa/bbb/ccc.rss", 1.],
+                ]),
+                columns=["uri", "feed_url", "trend_score"],
+            ))
+
+        mock_feed_url_collection = mock_firestore.Client.return_value.collection.return_value.document.return_value.collection
+        mock_uri_document = mock_feed_url_collection.return_value.document
+        mock_uri_ref = mock_uri_document.return_value
+        mock_uri_ref.get.return_value.exists = False
+
+        sut.write()
+
+        mock_feed_url_collection.assert_called_once_with("aaa_bbb_ccc.rss")
+        mock_uri_document.assert_called_once_with("http:__aaa_bbb.com")
+        mock_uri_ref.set.assert_not_called()
 
 
 if __name__ == "__main__":
