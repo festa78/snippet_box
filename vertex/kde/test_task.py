@@ -1,0 +1,138 @@
+#!/usr/bin/python3 -B
+
+import unittest
+from unittest import mock
+
+import numpy as np
+
+import task
+
+
+def data_gen_helper(uri, word, tfidf, feed_url):
+    return {
+        "uri": uri,
+        "word": word,
+        "tfidf": tfidf,
+        "feedUrl": feed_url,
+    }
+
+
+class TestTfidfBqTable(unittest.TestCase):
+
+    @mock.patch("task.bigquery")
+    def test_unique_words(self, mock_bigquery):
+        sut = task.TfidfBqTable()
+        sut.data = [
+            data_gen_helper("aaa", "apple", "bbb", "ccc"),
+            data_gen_helper("aaa", "banana", "bbb", "ccc"),
+            data_gen_helper("aaa", "diamond", "bbb", "ccc"),
+            data_gen_helper("aaa", "cola", "bbb", "ccc"),
+            data_gen_helper("aaa", "banana", "bbb", "ccc"),
+        ]
+
+        assert sut.unique_words() == [
+            "apple",
+            "banana",
+            "cola",
+            "diamond",
+        ]
+
+    @mock.patch("task.bigquery")
+    def test_uri_to_word_and_tfidf_list(self, mock_bigquery):
+        sut = task.TfidfBqTable()
+        sut.data = [
+            data_gen_helper("aaa.com", "apple", 0., "ccc"),
+            data_gen_helper("ddd.com", "banana", 1., "ccc"),
+            data_gen_helper("eee.com", "diamond", 2., "ccc"),
+            data_gen_helper("bbb.com", "cola", 3., "ccc"),
+            data_gen_helper("fff.com", "banana", 4., "ccc"),
+            data_gen_helper("ddd.com", "forest", 5., "ccc"),
+        ]
+
+        assert sut.uri_to_word_and_tfidf_list() == {
+            "aaa.com": [("apple", 0.)],
+            "ddd.com": [("banana", 1.), ("forest", 5.)],
+            "eee.com": [("diamond", 2.)],
+            "bbb.com": [("cola", 3.)],
+            "fff.com": [("banana", 4.)],
+        }
+
+    @mock.patch("task.bigquery")
+    def test_uris(self, mock_bigquery):
+        sut = task.TfidfBqTable()
+        sut.data = [
+            data_gen_helper("aaa.com", "apple", "bbb", "ccc"),
+            data_gen_helper("ddd.com", "banana", "bbb", "ccc"),
+            data_gen_helper("eee.com", "diamond", "bbb", "ccc"),
+            data_gen_helper("bbb.com", "cola", "bbb", "ccc"),
+            data_gen_helper("fff.com", "banana", "bbb", "ccc"),
+        ]
+
+        assert sut.uris() == [
+            "aaa.com",
+            "bbb.com",
+            "ddd.com",
+            "eee.com",
+            "fff.com",
+        ]
+
+    @mock.patch("task.bigquery")
+    def test_uri_to_feedurl_list(self, mock_bigquery):
+        sut = task.TfidfBqTable()
+        sut.data = [
+            data_gen_helper("aaa.com", "apple", "bbb", "aaa.rss"),
+            data_gen_helper("ddd.com", "banana", "bbb", "ddd.rss"),
+            data_gen_helper("eee.com", "diamond", "bbb", "eee.rss"),
+            data_gen_helper("bbb.com", "cola", "bbb", "bbb.rss"),
+            data_gen_helper("fff.com", "banana", "bbb", "fff.rss"),
+            data_gen_helper("ddd.com", "banana", "bbb", "ccc.rss"),
+        ]
+
+        assert sut.uri_to_feedurl_list() == {
+            "aaa.com": ["aaa.rss"],
+            "ddd.com": ["ddd.rss", "ccc.rss"],
+            "eee.com": ["eee.rss"],
+            "bbb.com": ["bbb.rss"],
+            "fff.com": ["fff.rss"],
+        }
+
+    @mock.patch("task.bigquery")
+    def test_read_as_dataframe(self, mock_bigquery):
+        sut = task.TfidfBqTable()
+        sut.data = [
+            data_gen_helper("aaa.com", "apple", 0., "ccc"),
+            data_gen_helper("ddd.com", "banana", 1., "ccc"),
+            data_gen_helper("eee.com", "diamond", 2., "ccc"),
+            data_gen_helper("bbb.com", "cola", 3., "ccc"),
+            data_gen_helper("fff.com", "banana", 4., "ccc"),
+            data_gen_helper("ddd.com", "forest", 5., "ccc"),
+        ]
+
+        out = sut.read_as_dataframe()
+        assert all(out.index == [
+            "aaa.com",
+            "bbb.com",
+            "ddd.com",
+            "eee.com",
+            "fff.com",
+        ])
+        assert all(out.columns == [
+            "apple",
+            "banana",
+            "cola",
+            "diamond",
+            "forest",
+        ])
+        np.testing.assert_equal(
+            out.to_numpy(),
+            np.array([
+                [0., 0., 0., 0., 0.],
+                [0., 0., 3., 0., 0.],
+                [0., 1., 0., 0., 5.],
+                [0., 0., 0., 2., 0.],
+                [0., 4., 0., 0., 0.],
+            ]))
+
+
+if __name__ == "__main__":
+    unittest.main()
