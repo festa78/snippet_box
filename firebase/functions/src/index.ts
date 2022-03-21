@@ -45,9 +45,16 @@ export const updateRssContentOnSchedule = functions.pubsub
             .filter((uriSnapshot) => uriSnapshot.exists)
             .map((uriSnapshot) => {
               const uriData = uriSnapshot.data();
-              const parser = new Parser();
-              return parser.parseURL(uriData?.['uri']);
+              return uriData?.['uri'];
             })
+        );
+      })
+      .then((uris) => {
+        return Promise.all(
+          uris.map((uri) => {
+            const parser = new Parser();
+            return parser.parseURL(uri);
+          })
         );
       })
       .then((rssContents) => {

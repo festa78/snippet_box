@@ -1,3 +1,4 @@
+// This codes assume firebase emulator environment.
 import { assert, expect } from 'chai';
 import * as admin from 'firebase-admin';
 import * as functions from 'firebase-functions';

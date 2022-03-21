@@ -8,6 +8,7 @@
 .buildlog/
 .history
 .svn/
+.vscode/
 
 # IntelliJ related
 *.iml
@@ -45,6 +46,7 @@ app.*.map.json
 
 # Firebase config
 firebase-config.js
+firebase_options.dart
 
 # credentials
 **/flutter-myapp-*.json
