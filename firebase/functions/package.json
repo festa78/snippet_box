@@ -20,8 +20,8 @@
   "dependencies": {
     "@google-cloud/bigquery": "^5.9.3",
     "firebase": "^9.6.8",
-    "firebase-admin": "^10.0.2",
-    "firebase-functions": "^3.16.0",
+    "firebase-admin": "^11.4.1",
+    "firebase-functions": "^3.24.1",
     "node-fetch": "^2.6.5",
     "rss-parser": "^3.12.0"
   },
